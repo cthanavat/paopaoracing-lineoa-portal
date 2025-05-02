@@ -349,9 +349,9 @@ export default function HomePage() {
             {activeTab === "member" && (
               <div className="my-3 flex justify-center">
                 <div className="card">
-                  <p className="heading text-gray-600">Paopao Racing</p>
-                  <p className="text-gray-800">{member.name}</p>
-                  <p className="text-gray-800">{member.phone}</p>
+                  <p className="heading text-gray-500">Paopao Racing</p>
+                  <p className="text-gray-600">{member.name}</p>
+                  <p className="text-gray-700">{member.phone}</p>
                   <p>Member</p>
                 </div>
               </div>
@@ -376,7 +376,7 @@ export default function HomePage() {
                         <p className="mt-1 pl-2 text-xs whitespace-pre-line text-gray-800">
                           {bill.bill_detail || "-"}
                         </p>
-                        <p className="mt-2 text-right text-sm font-semibold text-black">
+                        <p className="mt-2 text-right text-sm font-semibold text-gray-600">
                           {bill.bill_total_amount || "-"} ฿
                         </p>
                       </div>
