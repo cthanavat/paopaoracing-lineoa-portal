@@ -159,9 +159,11 @@ export default function HomePage() {
 
         const result = await res.json();
         if (result.data && user?.userId) {
-          const userHistory = result.data.filter(
-            (bill) => bill.userId === user.userId,
-          );
+          const userHistory = result.data
+            .filter((bill) => bill.userId === user.userId)
+            .sort((a, b) =>
+              new Date(b.bill_date) > new Date(a.bill_date) ? 1 : -1,
+            );
           setHistoryList(userHistory);
         }
       } catch (error) {
@@ -373,10 +375,13 @@ export default function HomePage() {
                         <p className="text-sm font-bold text-gray-800">
                           {bill.bill_date || "-"}
                         </p>
-                        <p className="mt-1 pl-2 text-xs whitespace-pre-line text-gray-800">
+                        <p className="text-xs whitespace-pre-line text-gray-600 italic">
+                          {bill.car_plate_number || "-"}
+                        </p>
+                        <p className="pl-2 text-xs whitespace-pre-line text-gray-800">
                           {bill.bill_detail || "-"}
                         </p>
-                        <p className="mt-2 text-right text-sm font-semibold text-gray-600">
+                        <p className="mt-1 text-right text-sm font-semibold text-gray-600">
                           {bill.bill_total_amount || "-"} ฿
                         </p>
                       </div>
