@@ -31,6 +31,7 @@ export default function HomePage() {
     const stored = localStorage.getItem("line-user");
 
     const initLineAndConfig = async () => {
+      // get config from sheet
       try {
         const res = await fetch("/api/gSheet/get", {
           method: "POST",
@@ -265,6 +266,15 @@ export default function HomePage() {
             message: `${form.name} (${form.phone}) สมัครสมาชิกแล้ว`,
           }),
         });
+
+        if (liff.isLoggedIn()) {
+          liff.sendMessages([
+            {
+              type: "text",
+              text: "สมัครสมาชิกแล้ว",
+            },
+          ]);
+        }
 
         setSignup(false);
         setNotification({
