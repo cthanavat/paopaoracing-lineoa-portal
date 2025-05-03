@@ -372,10 +372,10 @@ export default function HomePage() {
                         key={idx}
                         className="rounded-lg border border-gray-200 bg-white px-6 py-2 shadow-md"
                       >
-                        <p className="text-sm font-bold text-gray-800">
+                        <p className="text-sm font-semibold text-gray-800">
                           {bill.bill_date || "-"}
                         </p>
-                        <p className="text-xs whitespace-pre-line text-gray-600 italic">
+                        <p className="text-xs whitespace-pre-line text-gray-500 italic">
                           {bill.car_plate_number || "-"}
                         </p>
                         <p className="pl-2 text-xs whitespace-pre-line text-gray-800">
