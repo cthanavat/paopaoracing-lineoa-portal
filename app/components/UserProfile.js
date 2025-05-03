@@ -9,7 +9,7 @@ export default function UserProfile({
 }) {
   return (
     <div className="mt-8 mb-2 flex items-center justify-center">
-      <div className="relative h-14 w-14 overflow-hidden rounded-full">
+      <div className="relative h-20 w-20 overflow-hidden rounded-full">
         <Image
           src={pictureUrl || "/placeholder-avatar.png"}
           alt={displayName}

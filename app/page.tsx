@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import UserProfile from "@/app/components/UserProfile";
 import Loader from "@/app/components/Loader";
 import Notification from "@/app/components/Notification";
-
-// Add CSS for styled notifications
 import "./notifications.css";
 
 export default function HomePage() {
@@ -19,7 +17,6 @@ export default function HomePage() {
     message: "",
     type: "success",
   });
-
   const [user, setUser] = useState(null);
   const [loadUser, setLoadUser] = useState(true);
   const [member, setMember] = useState(null);
@@ -238,11 +235,6 @@ export default function HomePage() {
       setSignup(false);
       return;
     }
-    console.log(config.userLine.sheetId); // outputs "1hZSPSHWmcnzVn2a4O5UtfjhDiu2FfwmWkploM9OEAp0"
-    console.log(config.userLine.range); // outputs "userLine!A1:G"
-
-    console.log(config.history.sheetId); // outputs "1EoFTthd6g_Y0sM9T_75-Sz-tbLUqruH-DYlUTA_WHvg"
-    console.log(config.history.range); // outputs "bills!A1:S"
 
     try {
       const res = await fetch("/api/gSheet/add", {
@@ -319,7 +311,7 @@ export default function HomePage() {
             <Loader />
           </div>
         ) : member ? (
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex min-w-2xs flex-col items-center justify-center">
             {/* Tab Buttons */}
             <div className="relative my-6 flex justify-center gap-10">
               <button
@@ -357,7 +349,7 @@ export default function HomePage() {
 
             {/* Tab Content */}
             {activeTab === "member" && (
-              <div className="my-3 flex justify-center">
+              <div className="my-3 flex min-w-2xs justify-center">
                 <div className="card">
                   <p className="heading text-gray-500">Paopao Racing</p>
                   <p className="text-gray-600">{member.name}</p>
@@ -374,7 +366,7 @@ export default function HomePage() {
                 ) : historyList.length === 0 ? (
                   <p className="text-center text-gray-400">No history found.</p>
                 ) : (
-                  <div className="mx-auto w-full max-w-sm space-y-4">
+                  <div className="mx-auto w-full max-w-xs min-w-2xs space-y-4">
                     {historyList.map((bill, idx) => (
                       <div
                         key={idx}
@@ -402,7 +394,7 @@ export default function HomePage() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="mx-auto max-w-sm space-y-2 rounded-xl bg-white p-6"
+            className="max-w-md min-w-2xs space-y-2 rounded-xl bg-white p-6"
           >
             <h4 className="text-center text-lg font-semibold">สมัครสามาชิก</h4>
             <div>

@@ -6,7 +6,6 @@ import { Buffer } from "buffer";
 export async function POST(request) {
   try {
     const { sheetId, range, newRow } = await request.json();
-    console.log(sheetId, range, newRow);
 
     if (!sheetId || !range || !newRow) {
       return NextResponse.json(
