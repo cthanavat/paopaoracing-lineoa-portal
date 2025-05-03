@@ -1,5 +1,4 @@
 // app/layout.js
-import { ThemeModeScript } from "flowbite-react";
 import "./globals.css";
 
 export const metadata = {
@@ -15,7 +14,6 @@ export default function RootLayout({ children }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
         />
-        <ThemeModeScript />
       </head>
       <body className="font-sans antialiased">{children}</body>
     </html>

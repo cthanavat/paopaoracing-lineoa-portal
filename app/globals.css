@@ -10,6 +10,7 @@
 
 body {
   @apply font-sans text-base text-gray-800 antialiased;
+  touch-action: manipulation;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
