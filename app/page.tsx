@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import UserProfile from "@/app/components/UserProfile";
 import Loader from "@/app/components/Loader";
 import Notification from "@/app/components/Notification";
+import Modal from "@/app/components/Modal";
 import "./notifications.css";
 
 export default function HomePage() {
@@ -13,6 +14,11 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState("member");
   const [config, setConfig] = useState([]);
   const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
+  const [modal, setModal] = useState({
     show: false,
     message: "",
     type: "success",
@@ -214,10 +220,15 @@ export default function HomePage() {
     // Validate phone number
     const phone = form.phone;
     if (!phone || phone.length !== 10 || !phone.startsWith("0")) {
-      setNotification({
+      // setNotification({
+      //   show: true,
+      //   message: "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง",
+      //   type: "error",
+      // });
+      setModal({
         show: true,
-        message: "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง",
-        type: "error",
+        message: "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง?",
+        type: "warning",
       });
       setSignup(false);
       return;
@@ -228,10 +239,15 @@ export default function HomePage() {
       (member) => member.phone === phone,
     );
     if (isPhoneNumberExists) {
-      setNotification({
+      // setNotification({
+      //   show: true,
+      //   message: "เบอร์นี้ถูกใช้งานแล้ว",
+      //   type: "error",
+      // });
+      setModal({
         show: true,
-        message: "เบอร์นี้ถูกใช้งานแล้ว",
-        type: "error",
+        message: "เบอร์นี้ถูกใช้งานแล้ว?",
+        type: "warning",
       });
       setSignup(false);
       return;
@@ -441,6 +457,13 @@ export default function HomePage() {
         type={notification.type}
         message={notification.message}
         onClose={() => setNotification((prev) => ({ ...prev, show: false }))}
+      />
+      <Modal
+        isOpen={modal.show}
+        onClose={() => setModal({ ...modal, show: false })}
+        title={modal.type === "success" ? "Success" : "Attention Required"}
+        message={modal.message}
+        onConfirm={() => setModal({ ...modal, show: false })}
       />
     </main>
   );
