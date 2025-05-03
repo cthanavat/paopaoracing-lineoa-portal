@@ -265,6 +265,15 @@ export default function HomePage() {
 
       const result = await res.json();
       if (result.success) {
+        await fetch("/api/pushover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: "สมาชิกใหม่",
+            message: `${form.name} (${form.phone}) สมัครสมาชิกแล้ว`,
+          }),
+        });
+
         setSignup(false);
         setNotification({
           show: true,
@@ -272,7 +281,6 @@ export default function HomePage() {
           type: "success",
         });
         setTimeout(() => {
-          setNotification({ show: false, message: "", type: "success" });
           router.refresh(); // You can delay this if needed
         }, 3000);
       } else {
