@@ -6,8 +6,8 @@ const Modal = ({ isOpen, onClose, title, message, onConfirm }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75">
-      <div className="relative w-full max-w-md p-4">
-        <div className="relative rounded-lg bg-white p-4 shadow-sm md:p-5">
+      <div className="relative w-full max-w-sm p-4">
+        <div className="relative rounded-2xl bg-white p-4 shadow-sm md:p-5">
           <button
             type="button"
             onClick={onClose}
@@ -47,10 +47,8 @@ const Modal = ({ isOpen, onClose, title, message, onConfirm }) => {
                 d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
               />
             </svg>
-            <h3 className="mb-5 text-lg font-normal text-gray-500">
-              {title || "Confirmation"}
-            </h3>
-            {message && <p className="mb-5 text-sm text-gray-500">{message}</p>}
+
+            {message && <p className="text-md mb-5 text-gray-800">{message}</p>}
 
             <button
               onClick={() => {
@@ -58,7 +56,7 @@ const Modal = ({ isOpen, onClose, title, message, onConfirm }) => {
                 onClose();
               }}
               type="button"
-              className="mr-2 inline-flex items-center rounded-lg bg-blue-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+              className="text-md mr-2 inline-flex items-center rounded-full bg-gray-800 px-5 py-2 text-center font-medium text-white hover:bg-red-800 focus:ring-4 focus:ring-red-300 focus:outline-none"
             >
               OK
             </button>

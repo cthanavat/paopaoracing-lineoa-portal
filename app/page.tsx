@@ -246,7 +246,7 @@ export default function HomePage() {
       // });
       setModal({
         show: true,
-        message: "เบอร์นี้ถูกใช้งานแล้ว?",
+        message: "เบอร์นี้ถูกใช้งานแล้ว",
         type: "warning",
       });
       setSignup(false);
