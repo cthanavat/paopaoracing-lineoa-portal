@@ -424,22 +424,26 @@ export default function HomePage() {
           >
             <h4 className="text-center text-lg font-semibold">สมัครสามาชิก</h4>
             <div>
-              <label className="mb-1 block text-sm text-gray-600">Name</label>
+              <label className="mb-1 block text-sm text-gray-600">ชื่อ</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                placeholder="ใช้ชื่อจริง (สำหรับ ยื่นประกัน)"
                 required
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-gray-600">Phone</label>
+              <label className="mb-1 block text-sm text-gray-600">
+                เบอร์โทร
+              </label>
               <input
                 type="text"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="mb-4 w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                placeholder="0123456789"
                 required
               />
             </div>
