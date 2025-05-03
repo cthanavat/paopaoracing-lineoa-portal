@@ -227,7 +227,7 @@ export default function HomePage() {
       // });
       setModal({
         show: true,
-        message: "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง?",
+        message: "กรอกเบอร์โทรศัพท์ไม่ถูกต้อง",
         type: "warning",
       });
       setSignup(false);
