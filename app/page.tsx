@@ -23,6 +23,7 @@ export default function HomePage() {
     message: "",
     type: "success",
   });
+  const [liffObject, setLiffObject] = useState<any>(null);
   const [user, setUser] = useState(null);
   const [loadUser, setLoadUser] = useState(true);
   const [member, setMember] = useState(null);
@@ -69,20 +70,15 @@ export default function HomePage() {
         setLoadUser(false);
       } else {
         try {
-          const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-          await liff.init({ liffId });
+          const liff = (await import("@line/liff")).default;
+          await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID });
+          setLiffObject(liff);
+
           if (!liff.isLoggedIn()) {
             liff.login();
-          } else {
-            const profile = await liff.getProfile();
-            if (profile) {
-              localStorage.setItem("line-user", JSON.stringify(profile));
-              setUser(profile);
-              setLoadUser(false);
-            }
           }
         } catch (err) {
-          console.error("LIFF init error:", err);
+          console.error("LIFF init failed", err);
         }
       }
     };
@@ -203,6 +199,8 @@ export default function HomePage() {
   }
 
   const sendLineMessage = async (message: string) => {
+    if (!liffObject) return;
+
     try {
       if (!liff.isInClient()) {
         console.error("This feature is only available in the LINE app.");
@@ -454,7 +452,7 @@ export default function HomePage() {
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => sendLineMessage("สวัสดีครับ")}
-                  className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white"
+                  className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
                 >
                   ทักทาย
                 </button>
