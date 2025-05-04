@@ -491,8 +491,11 @@ export default function HomePage() {
             {activeTab === "service" && (
               <div className="flex flex-col items-center">
                 <button
-                  onClick={() => {
-                    sendLiffMessage(`${new Date().toLocaleDateString()}\nสลับยาง`);
+                  onClick={() =>
+                    sendLiffMessage(
+                      `${new Date().toLocaleDateString()}\nสลับยาง`,
+                    )
+                  }
                   className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
                   disabled={!isLiffReady}
                 >
