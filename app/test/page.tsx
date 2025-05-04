@@ -2,10 +2,9 @@
 "use client"; // Ensure this is a client component (Next.js 13+ App Router)
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+// import dynamic from "next/dynamic";
 
 // Dynamically import LIFF to avoid server-side import
-// const liff = dynamic(() => import("@line/liff"), { ssr: false });
 
 export default function Home() {
   const [message, setMessage] = useState("");
