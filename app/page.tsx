@@ -213,7 +213,7 @@ export default function HomePage() {
         });
         return;
       }
-      return;
+      // return;
     }
     if (liffObject.isInClient()) {
       try {
