@@ -207,6 +207,11 @@ export default function HomePage() {
     try {
       if (!liff.isInClient()) {
         console.error("This feature is only available in the LINE app.");
+        setNotification({
+          show: true,
+          message: "เฉพาะการใช้งานในแอพ LINE",
+          type: "error",
+        });
         return;
       }
 
@@ -386,7 +391,7 @@ export default function HomePage() {
 
             {/* Tab Content */}
             {activeTab === "member" && (
-              <div>
+              <div className="flex flex-col items-center">
                 <div className="my-3 flex min-w-2xs justify-center">
                   <div className="card">
                     <p className="heading text-gray-500">Paopao Racing</p>
@@ -396,10 +401,10 @@ export default function HomePage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => sendLineMessage("hello world")}
-                  className="mt-4 w-full rounded-lg bg-black px-6 py-2 text-white"
+                  onClick={() => sendLineMessage("สวัสดีครับ")}
+                  className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white"
                 >
-                  Send Message
+                  ทักทาย
                 </button>
               </div>
             )}
