@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// import liff from "@line/liff";
 import { useRouter } from "next/navigation";
 import UserProfile from "@/app/components/UserProfile";
 import Loader from "@/app/components/Loader";
@@ -32,16 +31,14 @@ export default function HomePage() {
   const [loadHistory, setLoadHistory] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSignup, setSignup] = useState(false);
-
   const [message, setMessage] = useState("");
   const [error, setError] = useState(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
+  const [isLiffLoading, setIsLiffLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("line-user");
-
     const initLineAndConfig = async () => {
-      // get config from sheet
+      // Get config from sheet
       try {
         const res = await fetch("/api/gSheet/get", {
           method: "POST",
@@ -66,37 +63,59 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Error: Get config:", error);
+        setNotification({
+          show: true,
+          message: "Failed to load configuration",
+          type: "error",
+        });
       }
 
-      if (stored) {
-        setUser(JSON.parse(stored));
+      // Initialize LIFF
+      try {
+        const liffModule = await import("@line/liff");
+        await liffModule.default.init({
+          liffId: process.env.NEXT_PUBLIC_LIFF_ID,
+        });
+        console.log("LIFF initialized successfully");
+        setIsLiffReady(true);
+
+        // Check if user is stored in localStorage
+        const stored = localStorage.getItem("line-user");
+        if (stored) {
+          setUser(JSON.parse(stored));
+        } else {
+          // Fetch LINE profile
+          const profile = await liffModule.default.getProfile();
+          const userData = {
+            userId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl,
+            statusMessage: profile.statusMessage,
+          };
+          localStorage.setItem("line-user", JSON.stringify(userData));
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error("LIFF initialization failed:", err);
+        setError(err.message);
+        setNotification({
+          show: true,
+          message: "Failed to initialize LIFF",
+          type: "error",
+        });
+      } finally {
         setLoadUser(false);
-      } else {
-        const initializeLiff = async () => {
-          try {
-            const liffModule = await import("@line/liff");
-            await liffModule.default.init({
-              liffId: process.env.NEXT_PUBLIC_LIFF_ID,
-            });
-            console.log("LIFF initialized successfully");
-            setIsLiffReady(true);
-          } catch (err) {
-            console.error("LIFF initialization failed:", err);
-            setError(err.message);
-          }
-        };
-
-        initializeLiff();
-
-        // Cleanup: Close LIFF window when component unmounts
-        return () => {
-          import("@line/liff").then((liffModule) => {
-            if (liffModule.default.isInClient()) {
-              liffModule.default.closeWindow();
-            }
-          });
-        };
+        setIsLiffLoading(false);
       }
+
+      // Cleanup: Close LIFF window when component unmounts
+      return () => {
+        import("@line/liff").then((liffModule) => {
+          if (liffModule.default.isInClient()) {
+            liffModule.default.closeWindow();
+          }
+        });
+      };
     };
 
     initLineAndConfig();
@@ -120,10 +139,7 @@ export default function HomePage() {
 
         const result = await res.json();
         if (result.data) {
-          // Save all members to state
           setMemberAll(result.data);
-
-          // Find current user's member data
           if (user?.userId) {
             const userMember = result.data.find(
               (m) => m.userId === user.userId,
@@ -132,7 +148,7 @@ export default function HomePage() {
               setMember(userMember);
               setNotification({
                 show: true,
-                message: "สวัสดี  คุณ " + userMember.name,
+                message: "สวัสดี คุณ " + userMember.name,
                 type: "success",
               });
             } else {
@@ -146,6 +162,11 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Failed to load members:", error);
+        setNotification({
+          show: true,
+          message: "Failed to load members",
+          type: "error",
+        });
       } finally {
         setLoadMember(false);
       }
@@ -183,6 +204,11 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Failed to load history:", error);
+        setNotification({
+          show: true,
+          message: "Failed to load history",
+          type: "error",
+        });
       } finally {
         setLoadHistory(false);
       }
@@ -202,21 +228,22 @@ export default function HomePage() {
     }
   }, [notification.show]);
 
-  if (loadUser || isSignup || !config) {
-    return (
-      <main className="flex h-screen items-center justify-center">
-        <Loader />
-      </main>
-    );
-  }
-
-  if (!user) {
-    return <div>Something went wrong. Please refresh.</div>;
-  }
-
-  const sendMessage = async (message = "") => {
+  const sendMessage = async () => {
     if (!message) {
-      alert("Please enter a message");
+      setNotification({
+        show: true,
+        message: "Please enter a message",
+        type: "warning",
+      });
+      return;
+    }
+
+    if (!isLiffReady) {
+      setNotification({
+        show: true,
+        message: "LIFF is not initialized",
+        type: "error",
+      });
       return;
     }
 
@@ -229,10 +256,20 @@ export default function HomePage() {
         },
       ]);
       console.log("Message sent successfully");
-      setMessage(""); // Clear input after sending
+      setMessage("");
+      setNotification({
+        show: true,
+        message: "Message sent successfully",
+        type: "success",
+      });
     } catch (err) {
       console.error("Error sending message:", err);
       setError(err.message);
+      setNotification({
+        show: true,
+        message: "Failed to send message",
+        type: "error",
+      });
     }
   };
 
@@ -250,7 +287,6 @@ export default function HomePage() {
       return;
     }
 
-    // Validate phone number
     const phone = form.phone;
     if (!phone || phone.length !== 10 || !phone.startsWith("0")) {
       setModal({
@@ -262,7 +298,6 @@ export default function HomePage() {
       return;
     }
 
-    // Check if phone already exists in memberAll
     const isPhoneNumberExists = memberAll.some(
       (member) => member.phone === phone,
     );
@@ -305,7 +340,11 @@ export default function HomePage() {
             message: `${form.name} (${form.phone}) สมัครสมาชิกแล้ว`,
           }),
         });
-        sendMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
+
+        // Set message and send
+        setMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
+        await sendMessage();
+
         setSignup(false);
         setNotification({
           show: true,
@@ -313,7 +352,7 @@ export default function HomePage() {
           type: "success",
         });
         setTimeout(() => {
-          router.refresh(); // You can delay this if needed
+          router.refresh();
         }, 3000);
       } else {
         setSignup(false);
@@ -334,9 +373,20 @@ export default function HomePage() {
     }
   }
 
+  if (loadUser || isSignup || !config || isLiffLoading) {
+    return (
+      <main className="flex h-screen items-center justify-center">
+        <Loader />
+      </main>
+    );
+  }
+
+  if (!user) {
+    return <div>Something went wrong. Please refresh.</div>;
+  }
+
   return (
     <main className="p-5 font-sans">
-      {/* User Profile */}
       <div>
         <UserProfile
           displayName={user.displayName}
@@ -344,7 +394,6 @@ export default function HomePage() {
           statusMessage={user.statusMessage}
         />
       </div>
-      {/* Members Section */}
       <div className="flex justify-center">
         {loadMember && config ? (
           <div className="my-4 flex justify-center gap-3">
@@ -352,7 +401,6 @@ export default function HomePage() {
           </div>
         ) : member ? (
           <div className="flex min-w-2xs flex-col items-center justify-center">
-            {/* Tab Buttons */}
             <div className="relative my-6 flex justify-center">
               <button
                 onClick={() => setActiveTab("member")}
@@ -369,7 +417,6 @@ export default function HomePage() {
                   }`}
                 />
               </button>
-
               <button
                 onClick={() => setActiveTab("history")}
                 className={`flex w-20 flex-col items-center px-3 pb-1 ${
@@ -385,7 +432,6 @@ export default function HomePage() {
                   }`}
                 />
               </button>
-
               <button
                 onClick={() => setActiveTab("service")}
                 className={`flex w-20 flex-col items-center px-3 pb-1 ${
@@ -402,8 +448,6 @@ export default function HomePage() {
                 />
               </button>
             </div>
-
-            {/* Tab Content */}
             {activeTab === "member" && (
               <div className="flex flex-col items-center">
                 <div className="my-3 flex min-w-2xs justify-center">
@@ -416,7 +460,6 @@ export default function HomePage() {
                 </div>
               </div>
             )}
-
             {activeTab === "history" && (
               <div>
                 {loadHistory ? (
@@ -448,26 +491,18 @@ export default function HomePage() {
                 )}
               </div>
             )}
-
             {activeTab === "service" && (
               <div className="flex flex-col items-center">
                 <button
-                  onClick={() => sendMessage("สวัสดีครับ")}
+                  onClick={() => {
+                    setMessage("สวัสดีครับ");
+                    sendMessage();
+                  }}
                   className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
+                  disabled={!isLiffReady}
                 >
                   ทักทาย
                 </button>
-                <div style={{ padding: "20px" }}>
-                  <h1>LIFF Message Sender</h1>
-                  {error && <p style={{ color: "red" }}>Error: {error}</p>}
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Enter your message"
-                  />
-                  <button onClick={sendMessage}>Send Message</button>
-                </div>
                 <div style={{ padding: "20px" }}>
                   <h1>LIFF Message Sender</h1>
                   {error && <p style={{ color: "red" }}>Error: {error}</p>}
@@ -489,7 +524,7 @@ export default function HomePage() {
             onSubmit={handleSubmit}
             className="max-w-md min-w-2xs space-y-2 rounded-xl bg-white p-6"
           >
-            <h4 className="text-center text-lg font-semibold">สมัครสามาชิก</h4>
+            <h4 className="text-center text-lg font-semibold">สมัครสมาชิก</h4>
             <div>
               <label className="mb-1 block text-sm text-gray-600">ชื่อ</label>
               <input
