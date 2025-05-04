@@ -78,12 +78,11 @@ export default function HomePage() {
             if (profile) {
               localStorage.setItem("line-user", JSON.stringify(profile));
               setUser(profile);
+              setLoadUser(false);
             }
           }
         } catch (err) {
           console.error("LIFF init error:", err);
-        } finally {
-          setLoadUser(false);
         }
       }
     };
