@@ -429,7 +429,7 @@ export default function HomePage() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                className="w-full rounded-md border border-gray-300 px-4 py-2 text-base focus:ring-2 focus:ring-black focus:outline-none"
                 placeholder="ใช้ชื่อจริง (สำหรับ ยื่นประกัน)"
                 required
               />
@@ -442,7 +442,7 @@ export default function HomePage() {
                 type="text"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="mb-4 w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                className="mb-4 w-full rounded-md border border-gray-300 px-4 py-2 text-base focus:ring-2 focus:ring-black focus:outline-none"
                 placeholder="0123456789"
                 required
               />

@@ -11,17 +11,23 @@
   font-family: "Kanit", sans-serif;
 }
 
-body {
-  @apply min-h-screen font-sans text-base text-gray-800 antialiased;
-  touch-action: manipulation;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 html,
 body {
-  touch-action: pan-x pan-y; /* Allows scrolling but not zooming */
-  overscroll-behavior: none; /* Prevents pull-to-refresh or overscroll effects */
+  @apply m-0 h-full w-full overflow-x-hidden p-0;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+input,
+textarea,
+select {
+  @apply text-base; /* Ensure 16px font size */
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  font-size: 16px !important;
+  zoom: 1;
 }
 
 /* card style */
