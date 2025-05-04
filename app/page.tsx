@@ -284,12 +284,20 @@ export default function HomePage() {
         });
 
         if (liff.isLoggedIn()) {
-          liff.sendMessages([
-            {
-              type: "text",
-              text: "สมัครสมาชิกแล้ว",
-            },
-          ]);
+          // Send a message
+          liff
+            .sendMessages([
+              {
+                type: "text",
+                text: "สมัครสมาชิกแล้ว",
+              },
+            ])
+            .then(() => {
+              console.log("Message sent!");
+            })
+            .catch((error) => {
+              console.error("Error sending message:", error);
+            });
         }
 
         setSignup(false);
