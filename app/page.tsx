@@ -472,9 +472,7 @@ export default function HomePage() {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Enter your message"
                   />
-                  <button onClick={sendMessage} disabled={!isLiffReady}>
-                    Send Message
-                  </button>
+                  <button onClick={sendMessage}>Send Message</button>
                 </div>
               </div>
             )}
