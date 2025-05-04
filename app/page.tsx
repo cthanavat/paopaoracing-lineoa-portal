@@ -71,8 +71,8 @@ export default function HomePage() {
       } else {
         try {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-          await liff.init({ liffId });
-          setLiffObject(liff);
+          const liffInit = await liff.init({ liffId });
+          setLiffObject(liffInit);
 
           if (!liff.isLoggedIn()) {
             liff.login();
@@ -205,6 +205,14 @@ export default function HomePage() {
         message: "LIFF object not found",
         type: "error",
       });
+      if (!liff) {
+        setNotification({
+          show: true,
+          message: "no liff",
+          type: "error",
+        });
+        return;
+      }
       return;
     }
     if (liffObject.isInClient()) {
