@@ -463,6 +463,19 @@ export default function HomePage() {
                 >
                   ทดสอบ
                 </a>
+                <div style={{ padding: "20px" }}>
+                  <h1>LIFF Message Sender</h1>
+                  {error && <p style={{ color: "red" }}>Error: {error}</p>}
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Enter your message"
+                  />
+                  <button onClick={sendMessage} disabled={!isLiffReady}>
+                    Send Message
+                  </button>
+                </div>
               </div>
             )}
           </div>
