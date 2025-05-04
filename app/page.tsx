@@ -31,6 +31,7 @@ export default function HomePage() {
   const [loadHistory, setLoadHistory] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSignup, setSignup] = useState(false);
+  // const [message, setMessage] = useState("");
   const [error, setError] = useState(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
   const [isLiffLoading, setIsLiffLoading] = useState(true);
@@ -120,7 +121,6 @@ export default function HomePage() {
     initLineAndConfig();
   }, []);
 
-  // Other useEffect hooks (fetchMembers, fetchHistory, notification timer) remain unchanged
   useEffect(() => {
     async function fetchMembers() {
       if (!config.userLine) return;
@@ -228,11 +228,11 @@ export default function HomePage() {
     }
   }, [notification.show]);
 
-  const sendLiffMessage = async (message) => {
-    if (!message) {
+  const sendLiffMessage = async (msg) => {
+    if (!msg) {
       setNotification({
         show: true,
-        message: "Please provide a message",
+        message: "Please enter a message",
         type: "warning",
       });
       return;
@@ -252,10 +252,11 @@ export default function HomePage() {
       await liffModule.default.sendMessages([
         {
           type: "text",
-          text: message,
+          text: msg,
         },
       ]);
       console.log("Message sent successfully");
+      // setMessage("");
       setNotification({
         show: true,
         message: "Message sent successfully",
@@ -340,7 +341,8 @@ export default function HomePage() {
           }),
         });
 
-        // Send message directly
+        // Set message and send
+        // setMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
         await sendLiffMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
 
         setSignup(false);
@@ -425,9 +427,9 @@ export default function HomePage() {
               >
                 ประวัติ
                 <div
-                  className=`mt-1 h-1 rounded-full transition-all duration-300 ${
+                  className={`mt-1 h-1 rounded-full transition-all duration-300 ${
                     activeTab === "history" ? "w-20 bg-black" : "w-0"
-                  }`
+                  }`}
                 />
               </button>
               <button
@@ -492,16 +494,31 @@ export default function HomePage() {
             {activeTab === "service" && (
               <div className="flex flex-col items-center">
                 <button
-                  onClick={() =>
-                    sendLiffMessage(
-                      `สลับยางฟรี วันที่ ${new Date().toLocaleDateString()}`,
-                    )
-                  }
+                  onClick={() => {
+                    // setMessage("สวัสดีครับ");
+                    sendLiffMessage("สวัสดีครับ");
+                  }}
                   className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
                   disabled={!isLiffReady}
                 >
-                  สลับยาง
+                  ทักทาย
                 </button>
+                <div style={{ padding: "20px" }}>
+                  <h1>LIFF Message Sender</h1>
+                  {error && <p style={{ color: "red" }}>Error: {error}</p>}
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Enter your message"
+                  />
+                  <button
+                    onClick={sendLiffMessage(message)}
+                    disabled={!isLiffReady}
+                  >
+                    Send Message
+                  </button>
+                </div>
               </div>
             )}
           </div>
