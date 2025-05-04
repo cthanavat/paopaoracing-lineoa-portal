@@ -205,16 +205,8 @@ export default function HomePage() {
         message: "LIFF object not found",
         type: "error",
       });
-      if (!liff) {
-        setNotification({
-          show: true,
-          message: "no liff",
-          type: "error",
-        });
-        return;
-      }
-      // return;
     }
+
     if (liffObject.isInClient()) {
       try {
         await liffObject.sendMessages([
@@ -237,7 +229,26 @@ export default function HomePage() {
       });
       // return;
     }
+    if (!liff) {
+      setNotification({
+        show: true,
+        message: "no liff",
+        type: "error",
+      });
+    } else {
+      setNotification({
+        show: true,
+        message: "has liff",
+        type: "error",
+      });
+    }
     if (liff.isInClient()) {
+      setNotification({
+        show: true,
+        message: "liff is in client",
+        type: "error",
+      });
+
       try {
         await liff.sendMessages([
           {
@@ -257,7 +268,7 @@ export default function HomePage() {
         message: "เฉพาะการใช้งานในแอพ LINE",
         type: "error",
       });
-      return;
+      // return;
     }
   };
 
