@@ -283,21 +283,15 @@ export default function HomePage() {
           }),
         });
 
-        if (liff.isLoggedIn()) {
-          // Send a message
-          liff
-            .sendMessages([
-              {
-                type: "text",
-                text: "สมัครสมาชิกแล้ว",
-              },
-            ])
-            .then(() => {
-              console.log("Message sent!");
-            })
-            .catch((error) => {
-              console.error("Error sending message:", error);
-            });
+        if (liff.isInClient()) {
+          try {
+            await liff.sendMessages([
+              { type: "text", text: "สมัครสมาชิกแล้ว" },
+            ]);
+            console.log("LIFF message sent");
+          } catch (error) {
+            console.error("LIFF message failed:", error);
+          }
         }
 
         setSignup(false);
