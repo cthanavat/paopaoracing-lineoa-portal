@@ -70,8 +70,8 @@ export default function HomePage() {
         setLoadUser(false);
       } else {
         try {
-          const liff = (await import("@line/liff")).default;
-          await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID });
+          const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+          await liff.init({ liffId });
           setLiffObject(liff);
 
           if (!liff.isLoggedIn()) {
