@@ -235,6 +235,28 @@ export default function HomePage() {
         message: "เฉพาะการใช้งานในแอพ LINE",
         type: "error",
       });
+      // return;
+    }
+    if (liff.isInClient()) {
+      try {
+        await liff.sendMessages([
+          {
+            type: "text",
+            text: message,
+          },
+        ]);
+
+        console.log("Message sent successfully");
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
+    } else {
+      console.error("This feature is only available in the LINE app.");
+      setNotification({
+        show: true,
+        message: "เฉพาะการใช้งานในแอพ LINE",
+        type: "error",
+      });
       return;
     }
   };
