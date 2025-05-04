@@ -214,7 +214,7 @@ export default function HomePage() {
     return <div>Something went wrong. Please refresh.</div>;
   }
 
-  const sendMessage = async () => {
+  const sendMessage = async (message = "") => {
     if (!message) {
       alert("Please enter a message");
       return;
@@ -457,12 +457,6 @@ export default function HomePage() {
                 >
                   ทักทาย
                 </button>
-                <a
-                  href="/test"
-                  className="mt-4 max-w-xs rounded-full bg-blue-500 px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-600 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
-                >
-                  ทดสอบ
-                </a>
                 <div style={{ padding: "20px" }}>
                   <h1>LIFF Message Sender</h1>
                   {error && <p style={{ color: "red" }}>Error: {error}</p>}
