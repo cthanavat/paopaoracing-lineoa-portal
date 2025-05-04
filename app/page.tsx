@@ -31,7 +31,6 @@ export default function HomePage() {
   const [loadHistory, setLoadHistory] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSignup, setSignup] = useState(false);
-  const [error, setError] = useState(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
   const [isLiffLoading, setIsLiffLoading] = useState(true);
 
@@ -96,10 +95,9 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error("LIFF initialization failed:", err);
-        setError(err.message);
         setNotification({
           show: true,
-          message: "Failed to initialize LIFF",
+          message: err.messages,
           type: "error",
         });
       } finally {
@@ -262,10 +260,9 @@ export default function HomePage() {
       });
     } catch (err) {
       console.error("Error sending message:", err);
-      setError(err.message);
       setNotification({
         show: true,
-        message: "Failed to send message",
+        message: err.message,
         type: "error",
       });
     }
