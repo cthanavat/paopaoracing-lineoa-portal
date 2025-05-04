@@ -203,6 +203,26 @@ export default function HomePage() {
     return <div>Something went wrong. Please refresh.</div>;
   }
 
+  const sendLineMessage = async (message: string) => {
+    try {
+      if (!liff.isInClient()) {
+        console.error("This feature is only available in the LINE app.");
+        return;
+      }
+
+      await liff.sendMessages([
+        {
+          type: "text",
+          text: message,
+        },
+      ]);
+
+      console.log("Message sent successfully");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
     setSignup(true);
@@ -282,18 +302,7 @@ export default function HomePage() {
             message: `${form.name} (${form.phone}) สมัครสมาชิกแล้ว`,
           }),
         });
-
-        if (liff.isInClient()) {
-          try {
-            await liff.sendMessages([
-              { type: "text", text: "สมัครสมาชิกแล้ว" },
-            ]);
-            console.log("LIFF message sent");
-          } catch (error) {
-            console.error("LIFF message failed:", error);
-          }
-        }
-
+        sendLineMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
         setSignup(false);
         setNotification({
           show: true,
@@ -377,13 +386,21 @@ export default function HomePage() {
 
             {/* Tab Content */}
             {activeTab === "member" && (
-              <div className="my-3 flex min-w-2xs justify-center">
-                <div className="card">
-                  <p className="heading text-gray-500">Paopao Racing</p>
-                  <p className="text-gray-600">{member.name}</p>
-                  <p className="text-gray-700">{member.phone}</p>
-                  <p>Member</p>
+              <div>
+                <div className="my-3 flex min-w-2xs justify-center">
+                  <div className="card">
+                    <p className="heading text-gray-500">Paopao Racing</p>
+                    <p className="text-gray-600">{member.name}</p>
+                    <p className="text-gray-700">{member.phone}</p>
+                    <p>Member</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => sendLineMessage("hello world")}
+                  className="mt-4 w-full rounded-lg bg-black px-6 py-2 text-white"
+                >
+                  Send Message
+                </button>
               </div>
             )}
 
