@@ -31,7 +31,6 @@ export default function HomePage() {
   const [loadHistory, setLoadHistory] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSignup, setSignup] = useState(false);
-  // const [message, setMessage] = useState("");
   const [error, setError] = useState(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
   const [isLiffLoading, setIsLiffLoading] = useState(true);
@@ -256,7 +255,6 @@ export default function HomePage() {
         },
       ]);
       console.log("Message sent successfully");
-      // setMessage("");
       setNotification({
         show: true,
         message: "Message sent successfully",
@@ -342,7 +340,6 @@ export default function HomePage() {
         });
 
         // Set message and send
-        // setMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
         await sendLiffMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
 
         setSignup(false);
@@ -495,30 +492,12 @@ export default function HomePage() {
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => {
-                    // setMessage("สวัสดีครับ");
-                    sendLiffMessage("สวัสดีครับ");
-                  }}
+                    sendLiffMessage(`${new Date().toLocaleDateString()}\nสลับยาง`);
                   className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
                   disabled={!isLiffReady}
                 >
-                  ทักทาย
+                  สลับยาง
                 </button>
-                <div style={{ padding: "20px" }}>
-                  <h1>LIFF Message Sender</h1>
-                  {error && <p style={{ color: "red" }}>Error: {error}</p>}
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Enter your message"
-                  />
-                  <button
-                    onClick={sendLiffMessage(message)}
-                    disabled={!isLiffReady}
-                  >
-                    Send Message
-                  </button>
-                </div>
               </div>
             )}
           </div>
