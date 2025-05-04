@@ -493,6 +493,12 @@ export default function HomePage() {
                 >
                   ทักทาย
                 </button>
+                <a
+                  href="/test"
+                  className="mt-4 max-w-xs rounded-full bg-blue-500 px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-600 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
+                >
+                  ทดสอบ
+                </a>
               </div>
             )}
           </div>
