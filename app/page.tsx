@@ -199,29 +199,35 @@ export default function HomePage() {
   }
 
   const sendLineMessage = async (message: string) => {
-    if (!liffObject) return;
+    if (!liffObject) {
+      setNotification({
+        show: true,
+        message: "LIFF object not found",
+        type: "error",
+      });
+      return;
+    }
+    if (liffObject.isInClient()) {
+      try {
+        await liffObject.sendMessages([
+          {
+            type: "text",
+            text: message,
+          },
+        ]);
 
-    try {
-      if (!liff.isInClient()) {
-        console.error("This feature is only available in the LINE app.");
-        setNotification({
-          show: true,
-          message: "เฉพาะการใช้งานในแอพ LINE",
-          type: "error",
-        });
-        return;
+        console.log("Message sent successfully");
+      } catch (error) {
+        console.error("Error sending message:", error);
       }
-
-      await liff.sendMessages([
-        {
-          type: "text",
-          text: message,
-        },
-      ]);
-
-      console.log("Message sent successfully");
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } else {
+      console.error("This feature is only available in the LINE app.");
+      setNotification({
+        show: true,
+        message: "เฉพาะการใช้งานในแอพ LINE",
+        type: "error",
+      });
+      return;
     }
   };
 
@@ -242,11 +248,6 @@ export default function HomePage() {
     // Validate phone number
     const phone = form.phone;
     if (!phone || phone.length !== 10 || !phone.startsWith("0")) {
-      // setNotification({
-      //   show: true,
-      //   message: "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง",
-      //   type: "error",
-      // });
       setModal({
         show: true,
         message: "กรอกเบอร์โทรศัพท์ไม่ถูกต้อง",
@@ -261,11 +262,6 @@ export default function HomePage() {
       (member) => member.phone === phone,
     );
     if (isPhoneNumberExists) {
-      // setNotification({
-      //   show: true,
-      //   message: "เบอร์นี้ถูกใช้งานแล้ว",
-      //   type: "error",
-      // });
       setModal({
         show: true,
         message: "เบอร์นี้ถูกใช้งานแล้ว",
