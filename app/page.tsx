@@ -303,7 +303,7 @@ export default function HomePage() {
         }, 3000);
       } else {
         setSignup(false);
-        setNotification({
+        setModal({
           show: true,
           message: "สร้างบัญชีผู้ใช้ไม่สําเร็จ",
           type: "error",
