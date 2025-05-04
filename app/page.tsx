@@ -23,7 +23,7 @@ export default function HomePage() {
     message: "",
     type: "success",
   });
-  const [liffObject, setLiffObject] = useState<any>(null);
+  const [liffObject, setLiffObject] = useState(null);
   const [user, setUser] = useState(null);
   const [loadUser, setLoadUser] = useState(true);
   const [member, setMember] = useState(null);
