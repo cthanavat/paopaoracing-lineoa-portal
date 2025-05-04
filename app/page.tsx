@@ -354,7 +354,7 @@ export default function HomePage() {
         ) : member ? (
           <div className="flex min-w-2xs flex-col items-center justify-center">
             {/* Tab Buttons */}
-            <div className="relative my-6 flex justify-center gap-10">
+            <div className="relative my-6 flex justify-center">
               <button
                 onClick={() => setActiveTab("member")}
                 className={`flex w-20 flex-col items-center px-3 pb-1 ${
@@ -363,7 +363,7 @@ export default function HomePage() {
                     : "text-gray-400"
                 }`}
               >
-                member
+                สมาชิก
                 <div
                   className={`mt-1 h-1 rounded-full transition-all duration-300 ${
                     activeTab === "member" ? "w-20 bg-black" : "w-0"
@@ -379,10 +379,26 @@ export default function HomePage() {
                     : "text-gray-400"
                 }`}
               >
-                history
+                ประวัติ
                 <div
                   className={`mt-1 h-1 rounded-full transition-all duration-300 ${
                     activeTab === "history" ? "w-20 bg-black" : "w-0"
+                  }`}
+                />
+              </button>
+
+              <button
+                onClick={() => setActiveTab("service")}
+                className={`flex w-20 flex-col items-center px-3 pb-1 ${
+                  activeTab === "service"
+                    ? "font-semibold text-black"
+                    : "text-gray-400"
+                }`}
+              >
+                บริการ
+                <div
+                  className={`mt-1 h-1 rounded-full transition-all duration-300 ${
+                    activeTab === "service" ? "w-20 bg-black" : "w-0"
                   }`}
                 />
               </button>
@@ -399,12 +415,6 @@ export default function HomePage() {
                     <p>Member</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => sendLineMessage("สวัสดีครับ")}
-                  className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white"
-                >
-                  ทักทาย
-                </button>
               </div>
             )}
 
@@ -437,6 +447,17 @@ export default function HomePage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === "service" && (
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={() => sendLineMessage("สวัสดีครับ")}
+                  className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white"
+                >
+                  ทักทาย
+                </button>
               </div>
             )}
           </div>
