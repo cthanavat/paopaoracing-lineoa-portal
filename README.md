@@ -10,5 +10,6 @@
 
 ### **Version History**
 
+- V2505.5 - go live
 - V2505.2 - create project with next js
   to replace version nuxt js version
