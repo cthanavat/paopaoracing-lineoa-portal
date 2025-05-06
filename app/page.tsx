@@ -7,10 +7,22 @@ import Loader from "@/app/components/Loader";
 import Notification from "@/app/components/Notification";
 import Modal from "@/app/components/Modal";
 import "./notifications.css";
+import {
+  Button,
+  TabItem,
+  Tabs,
+  Timeline,
+  TimelineBody,
+  TimelineContent,
+  TimelineItem,
+  TimelinePoint,
+  TimelineTime,
+  TimelineTitle,
+} from "flowbite-react";
+import { HiClock, HiClipboardList, HiUserCircle } from "react-icons/hi";
 
 export default function HomePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("member");
   const [config, setConfig] = useState([]);
   const [notification, setNotification] = useState({
     show: false,
@@ -390,59 +402,21 @@ export default function HomePage() {
       </div>
       <div className="flex justify-center">
         {loadMember && config ? (
-          <div className="my-4 flex justify-center gap-3">
+          <div className="my-4 flex items-center justify-center">
             <Loader />
           </div>
         ) : member ? (
-          <div className="flex min-w-2xs flex-col items-center justify-center">
-            <div className="relative my-6 flex justify-center">
-              <button
-                onClick={() => setActiveTab("member")}
-                className={`flex w-20 flex-col items-center px-3 pb-1 ${
-                  activeTab === "member"
-                    ? "font-semibold text-black"
-                    : "text-gray-400"
-                }`}
-              >
-                สมาชิก
-                <div
-                  className={`mt-1 h-1 rounded-full transition-all duration-300 ${
-                    activeTab === "member" ? "w-20 bg-black" : "w-0"
-                  }`}
-                />
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
-                className={`flex w-20 flex-col items-center px-3 pb-1 ${
-                  activeTab === "history"
-                    ? "font-semibold text-black"
-                    : "text-gray-400"
-                }`}
-              >
-                ประวัติ
-                <div
-                  className={`mt-1 h-1 rounded-full transition-all duration-300 ${
-                    activeTab === "history" ? "w-20 bg-black" : "w-0"
-                  }`}
-                />
-              </button>
-              <button
-                onClick={() => setActiveTab("service")}
-                className={`flex w-20 flex-col items-center px-3 pb-1 ${
-                  activeTab === "service"
-                    ? "font-semibold text-black"
-                    : "text-gray-400"
-                }`}
-              >
-                บริการ
-                <div
-                  className={`mt-1 h-1 rounded-full transition-all duration-300 ${
-                    activeTab === "service" ? "w-20 bg-black" : "w-0"
-                  }`}
-                />
-              </button>
-            </div>
-            {activeTab === "member" && (
+          <Tabs
+            aria-label="Tabs with underline"
+            variant="underline"
+            className="flex min-w-2xs items-center-safe"
+          >
+            <TabItem
+              active
+              title="สมาชิก"
+              icon={HiUserCircle}
+              className="flex items-center justify-center"
+            >
               <div className="flex flex-col items-center">
                 <div className="my-3 flex min-w-2xs justify-center">
                   <div className="card">
@@ -453,39 +427,46 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-            )}
-            {activeTab === "history" && (
-              <div>
-                {loadHistory ? (
+              {member.userRole === "admin" && (
+                <div className="flex flex-col items-center py-4">
+                  <Button
+                    href="/dashboard"
+                    className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
+                  >
+                    dashboard
+                  </Button>
+                </div>
+              )}
+            </TabItem>
+            <TabItem title="ประวัติ" icon={HiClock}>
+              {loadHistory ? (
+                <div className="my-4 flex items-center justify-center">
                   <Loader />
-                ) : historyList.length === 0 ? (
-                  <p className="text-center text-gray-400">No history found.</p>
-                ) : (
-                  <div className="mx-auto w-full max-w-xs min-w-2xs space-y-4">
+                </div>
+              ) : (
+                <div className="mx-auto w-full max-w-xs min-w-2xs px-4">
+                  <Timeline className="pt-0">
                     {historyList.map((bill, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-gray-200 bg-white px-6 py-2 shadow-md"
-                      >
-                        <p className="text-sm font-semibold text-gray-800">
-                          {bill.bill_date || "-"}
-                        </p>
-                        <p className="text-xs whitespace-pre-line text-gray-500 italic">
-                          {bill.car_plate_number || "-"}
-                        </p>
-                        <p className="pl-2 text-xs whitespace-pre-line text-gray-800">
-                          {bill.bill_detail || "-"}
-                        </p>
-                        <p className="mt-1 text-right text-sm font-semibold text-gray-600">
-                          {bill.bill_total_amount || "-"} ฿
-                        </p>
-                      </div>
+                      <TimelineItem key={idx}>
+                        <TimelinePoint />
+                        <TimelineContent>
+                          <TimelineTime>{bill.bill_date}</TimelineTime>
+                          <TimelineTitle>
+                            {bill.car_plate_number +
+                              ": " +
+                              bill.bill_total_amount || "-"}
+                          </TimelineTitle>
+                          <TimelineBody className="whitespace-pre-line">
+                            {bill.bill_detail}
+                          </TimelineBody>
+                        </TimelineContent>
+                      </TimelineItem>
                     ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {activeTab === "service" && (
+                  </Timeline>
+                </div>
+              )}
+            </TabItem>
+            <TabItem title="บริการ" icon={HiClipboardList}>
               <div className="flex flex-col items-center">
                 <button
                   onClick={() =>
@@ -499,8 +480,8 @@ export default function HomePage() {
                   สลับยาง
                 </button>
               </div>
-            )}
-          </div>
+            </TabItem>
+          </Tabs>
         ) : (
           <form
             onSubmit={handleSubmit}
