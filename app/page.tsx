@@ -450,13 +450,15 @@ export default function HomePage() {
                       <TimelineItem key={idx}>
                         <TimelinePoint />
                         <TimelineContent>
-                          <TimelineTime>{bill.bill_date}</TimelineTime>
+                          <TimelineTime className="text-gray-700">
+                            {bill.bill_date}
+                          </TimelineTime>
                           <TimelineTitle>
                             {bill.car_plate_number +
                               ": " +
                               bill.bill_total_amount || "-"}
                           </TimelineTitle>
-                          <TimelineBody className="whitespace-pre-line">
+                          <TimelineBody className="pl-2 whitespace-pre-line">
                             {bill.bill_detail}
                           </TimelineBody>
                         </TimelineContent>
