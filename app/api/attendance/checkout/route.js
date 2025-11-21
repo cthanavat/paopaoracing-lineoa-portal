@@ -1,22 +1,30 @@
 // app/api/attendance/checkout/route.js
+
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { Buffer } from "buffer";
 
 export async function POST(request) {
   try {
-    const { userId, date, checkOut, workHours } = await request.json();
+    const body = await request.json();
+    const {
+      userId,
+      date,
+      checkOut,
+      workHours,
+      sheetId,
+      range = "attendance!A:J",
+    } = body;
 
-    if (!userId || !date || !checkOut || !workHours) {
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!userId || !date || !checkOut || !workHours || !sheetId) {
       return NextResponse.json(
-        { success: false, error: "Missing required parameters" },
+        { success: false, error: "Missing required fields" },
         { status: 400 },
       );
     }
 
-    const sheetId = process.env.NEXT_PUBLIC_CONFIG_SHEET_ID;
-
-    // Set up auth - using service account
+    // Auth Google Sheets
     const credentials = JSON.parse(
       Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, "base64").toString(),
     );
@@ -28,57 +36,55 @@ export async function POST(request) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Get the current rows from the sheet
+    // ดึงข้อมูลทั้งหมด
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "attendance!A1:H",
+      range: range,
     });
 
     const rows = response.data.values;
-
-    if (!rows || rows.length < 2) {
+    if (!rows || rows.length <= 1) {
       return NextResponse.json(
-        { success: false, error: "No attendance data found" },
+        { success: false, error: "No data in attendance sheet" },
         { status: 404 },
       );
     }
 
-    const dataRows = rows.slice(1);
+    const dataRows = rows.slice(1); // ข้าม header
 
-    // Find the row index in dataRows where date and userId match
+    // หาแถวที่ตรงกับ date + userId
     const rowIndex = dataRows.findIndex(
-      (row) => row[0] === date && row[1] === userId,
+      (row) => row[3] === date && row[4] === userId, // D=date, E=userId
     );
 
     if (rowIndex === -1) {
       return NextResponse.json(
-        { success: false, error: "Attendance record not found" },
+        { success: false, error: "ไม่พบข้อมูลเช็คอินของวันนี้" },
         { status: 404 },
       );
     }
 
-    // The actual sheet row number (1-based, first data row is 2)
-    const sheetRowNumber = 2 + rowIndex;
-
-    // Update the row with checkOut, status, and workHours
+    // สร้างแถวใหม่ที่จะอัปเดต (H, I, J)
     const updatedRow = [...dataRows[rowIndex]];
-    updatedRow[4] = checkOut; // E: checkOut
-    updatedRow[5] = "completed"; // F: status
-    updatedRow[6] = workHours; // G: workHours
+    updatedRow[7] = checkOut; // H → checkOut
+    updatedRow[8] = "completed"; // I → status
+    updatedRow[9] = workHours; // J → workHours
 
-    // Update the sheet
+    // อัปเดตแถวนั้นใน Google Sheet
+    const sheetRowNumber = rowIndex + 2; // +2 เพราะมี header และเริ่มนับจากแถว 2
+
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `attendance!A${sheetRowNumber}:H${sheetRowNumber}`,
+      range: `attendance!A${sheetRowNumber}:J${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
       resource: {
         values: [updatedRow],
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "เช็คเอาท์สำเร็จ" });
   } catch (error) {
-    console.error("Error in checkout:", error);
+    console.error("Checkout API Error:", error.message);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 },

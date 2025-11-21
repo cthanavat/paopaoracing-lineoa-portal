@@ -38,6 +38,8 @@ export default function AttendancePage() {
     member,
     setMember,
     memberAll,
+    employee,
+    setEmployee,
     employees,
     setEmployees,
     loadingEmployees,
@@ -101,6 +103,7 @@ export default function AttendancePage() {
           return;
         }
         // Load attendance & leave data
+        await loadEmployees(user.user);
         await loadAttendanceData(user.userId);
         await loadLeaveData(user.userId);
       } catch (error) {
@@ -117,40 +120,41 @@ export default function AttendancePage() {
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, member, config]);
-  useEffect(() => {
-    const loadEmployees = async () => {
-      try {
-        const res = await fetch("/api/gSheet/get", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: {
-              sheetId: `${config.employees.sheetId}`,
-              range: `${config.employees.range}`,
-            },
-          }),
-        });
-        const result = await res.json();
-        if (result.data) {
-          setEmployees(
-            result.data.filter(
-              (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
-            ),
-          );
-          console.log(
-            result.data.filter(
-              (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
-            ),
-          );
-        }
-      } catch (error) {
-        console.error("Failed to load employees:", error);
-      } finally {
-        setLoadingEmployees(false);
+
+  const loadEmployees = async () => {
+    try {
+      const res = await fetch("/api/gSheet/get", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sheet: {
+            sheetId: `${config.employees.sheetId}`,
+            range: `${config.employees.range}`,
+          },
+        }),
+      });
+      const result = await res.json();
+      if (result.data) {
+        setEmployees(
+          result.data.filter(
+            (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
+          ),
+        );
+        // console.log(
+        //   result.data.filter(
+        //     (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
+        //   ),
+        // );
+
+        setEmployee(result.data.filter((e) => e.userId === member.userId)[0]);
+        console.log("loaded employee");
       }
-    };
-    loadEmployees();
-  }, []);
+    } catch (error) {
+      console.error("Failed to load employees:", error);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
   const loadAttendanceData = async (userId) => {
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -160,16 +164,20 @@ export default function AttendancePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sheet: {
-            sheetId: process.env.NEXT_PUBLIC_CONFIG_SHEET_ID,
-            range: "attendance!A2:H",
+            sheetId: `${config.attendance.sheetId}`,
+            range: `${config.attendance.range}`,
           },
         }),
       });
       const attendanceResult = await attendanceRes.json();
       if (attendanceResult.data) {
+        console.log("loadAttendanceData", employee);
         const userRecords = attendanceResult.data
           .filter((r) => r.userId === userId)
           .map((r) => ({
+            attendance_id: r.attendance_id || "",
+            created_at: r.created_at || "",
+            employee_id: r.employee_id || "",
             date: r.date || "",
             userId: r.userId || "",
             userName: r.userName || "",
@@ -199,8 +207,8 @@ export default function AttendancePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sheet: {
-            sheetId: process.env.NEXT_PUBLIC_CONFIG_SHEET_ID,
-            range: "leave!A2:G",
+            sheetId: `${config.employee_leaves.sheetId}`,
+            range: `${config.employee_leaves.range}`,
           },
         }),
       });
@@ -246,9 +254,12 @@ export default function AttendancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sheetId: process.env.NEXT_PUBLIC_CONFIG_SHEET_ID,
-          range: "attendance!A:H",
+          sheetId: `${config.attendance.sheetId}`,
+          range: `${config.attendance.range}`,
           newRow: [
+            "",
+            "",
+            "",
             today,
             user.userId,
             member.name,
@@ -298,7 +309,7 @@ export default function AttendancePage() {
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const workHours = `${hours}:${String(minutes).padStart(2, "0")}`;
 
-      // Update existing row via your API
+      // ใน handleCheckOut() ของ AttendancePage
       const res = await fetch("/api/attendance/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -307,6 +318,8 @@ export default function AttendancePage() {
           date: todayRecord.date,
           checkOut: time,
           workHours,
+          sheetId: config.attendance.sheetId, // ส่งมา
+          // range ไม่ต้องส่งก็ได้ ถ้าใน API กำหนดตายตัวว่า A:J
         }),
       });
 
