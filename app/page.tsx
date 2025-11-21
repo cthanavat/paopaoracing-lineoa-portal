@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import UserProfile from "@/app/components/UserProfile";
@@ -20,10 +19,26 @@ import {
   TimelineTitle,
 } from "flowbite-react";
 import { HiClock, HiClipboardList, HiUserCircle } from "react-icons/hi";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function HomePage() {
   const router = useRouter();
-  const [config, setConfig] = useState([]);
+
+  // ใช้ Zustand store แทนการเก็บข้อมูลด้วย useState
+  const {
+    user,
+    setUser,
+    member,
+    setMember,
+    memberAll,
+    setMemberAll,
+    config,
+    setConfig,
+    historyList,
+    setHistoryList,
+  } = useAppStore();
+
+  // local-only UI states (คงเดิม)
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -34,21 +49,17 @@ export default function HomePage() {
     message: "",
     type: "success",
   });
-  const [user, setUser] = useState(null);
-  const [loadUser, setLoadUser] = useState(true);
-  const [member, setMember] = useState(null);
-  const [memberAll, setMemberAll] = useState([]);
-  const [loadMember, setLoadMember] = useState(true);
-  const [historyList, setHistoryList] = useState([]);
-  const [loadHistory, setLoadHistory] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "" });
+  const [loadUser, setLoadUser] = useState(true);
+  const [loadMember, setLoadMember] = useState(true);
+  const [loadHistory, setLoadHistory] = useState(true);
   const [isSignup, setSignup] = useState(false);
   const [isLiffReady, setIsLiffReady] = useState(false);
   const [isLiffLoading, setIsLiffLoading] = useState(true);
 
   useEffect(() => {
     const initLineAndConfig = async () => {
-      // Get config from sheet
+      // Load config → เก็บใน Zustand
       try {
         const res = await fetch("/api/gSheet/get", {
           method: "POST",
@@ -60,13 +71,10 @@ export default function HomePage() {
             },
           }),
         });
-
         const result = await res.json();
         if (result.data) {
           const dataJson = result.data.reduce((acc, cur) => {
-            if (cur.tableName) {
-              acc[cur.tableName] = cur;
-            }
+            if (cur.tableName) acc[cur.tableName] = cur;
             return acc;
           }, {});
           setConfig(dataJson);
@@ -80,21 +88,26 @@ export default function HomePage() {
         });
       }
 
-      // Initialize LIFF
+      // Load user from localStorage or LIFF → เก็บใน Zustand
+      const stored = localStorage.getItem("line-user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+        setLoadUser(false);
+        setIsLiffLoading(false);
+        return;
+      }
+
       try {
         const liffModule = await import("@line/liff");
         await liffModule.default.init({
           liffId: process.env.NEXT_PUBLIC_LIFF_ID,
         });
-        console.log("LIFF initialized successfully");
         setIsLiffReady(true);
 
-        // Check if user is stored in localStorage
-        const stored = localStorage.getItem("line-user");
-        if (stored) {
-          setUser(JSON.parse(stored));
+        const storedAgain = localStorage.getItem("line-user");
+        if (storedAgain) {
+          setUser(JSON.parse(storedAgain));
         } else {
-          // Fetch LINE profile
           const profile = await liffModule.default.getProfile();
           const userData = {
             userId: profile.userId,
@@ -107,17 +120,13 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error("LIFF initialization failed:", err);
-        setNotification({
-          show: true,
-          message: err.messages,
-          type: "error",
-        });
+        setNotification({ show: true, message: err.messages, type: "error" });
       } finally {
         setLoadUser(false);
         setIsLiffLoading(false);
       }
 
-      // Cleanup: Close LIFF window when component unmounts
+      // Cleanup
       return () => {
         import("@line/liff").then((liffModule) => {
           if (liffModule.default.isInClient()) {
@@ -128,11 +137,11 @@ export default function HomePage() {
     };
 
     initLineAndConfig();
-  }, []);
+  }, [setConfig, setUser]);
 
   useEffect(() => {
     async function fetchMembers() {
-      if (!config.userLine) return;
+      if (!config?.userLine) return;
 
       try {
         const res = await fetch("/api/gSheet/get", {
@@ -148,7 +157,10 @@ export default function HomePage() {
 
         const result = await res.json();
         if (result.data) {
+          // เก็บรายการสมาชิกทั้งหมดใน Zustand
           setMemberAll(result.data);
+
+          // map user → member ใน Zustand
           if (user?.userId) {
             const userMember = result.data.find(
               (m) => m.userId === user.userId,
@@ -181,14 +193,14 @@ export default function HomePage() {
       }
     }
 
-    if (user && config.userLine) {
+    if (user && config?.userLine) {
       fetchMembers();
     }
-  }, [user, isSignup, config]);
+  }, [user, isSignup, config, setMemberAll, setMember]);
 
   useEffect(() => {
     async function fetchHistory() {
-      if (!config.history) return;
+      if (!config?.history) return;
 
       try {
         const res = await fetch("/api/gSheet/get", {
@@ -209,6 +221,7 @@ export default function HomePage() {
             .sort((a, b) =>
               new Date(b.bill_date) > new Date(a.bill_date) ? 1 : -1,
             );
+          // เก็บประวัติไว้ใน Zustand
           setHistoryList(userHistory);
         }
       } catch (error) {
@@ -223,10 +236,10 @@ export default function HomePage() {
       }
     }
 
-    if (user && config.history) {
+    if (user && config?.history) {
       fetchHistory();
     }
-  }, [user, config]);
+  }, [user, config, setHistoryList]);
 
   useEffect(() => {
     if (notification.show) {
@@ -246,7 +259,6 @@ export default function HomePage() {
       });
       return;
     }
-
     if (!isLiffReady) {
       setNotification({
         show: true,
@@ -255,16 +267,9 @@ export default function HomePage() {
       });
       return;
     }
-
     try {
       const liffModule = await import("@line/liff");
-      await liffModule.default.sendMessages([
-        {
-          type: "text",
-          text: msg,
-        },
-      ]);
-      console.log("Message sent successfully");
+      await liffModule.default.sendMessages([{ type: "text", text: msg }]);
       setNotification({
         show: true,
         message: "Message sent successfully",
@@ -272,11 +277,7 @@ export default function HomePage() {
       });
     } catch (err) {
       console.error("Error sending message:", err);
-      setNotification({
-        show: true,
-        message: err.message,
-        type: "error",
-      });
+      setNotification({ show: true, message: err.message, type: "error" });
     }
   };
 
@@ -348,7 +349,6 @@ export default function HomePage() {
           }),
         });
 
-        // Set message and send
         await sendLiffMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
 
         setSignup(false);
@@ -388,7 +388,12 @@ export default function HomePage() {
   }
 
   if (!user) {
-    return <div>Something went wrong. Please refresh.</div>;
+    router.push("/login");
+    return (
+      <main className="flex h-screen items-center justify-center">
+        <Loader />
+      </main>
+    );
   }
 
   return (
@@ -400,6 +405,7 @@ export default function HomePage() {
           statusMessage={user.statusMessage}
         />
       </div>
+
       <div className="flex justify-center">
         {loadMember && config ? (
           <div className="my-4 flex items-center justify-center">
@@ -427,17 +433,8 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              {member.userRole === "admin" && (
-                <div className="flex flex-col items-center py-4">
-                  <Button
-                    href="/dashboard"
-                    className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
-                  >
-                    dashboard
-                  </Button>
-                </div>
-              )}
             </TabItem>
+
             <TabItem title="ประวัติ" icon={HiClock}>
               {loadHistory ? (
                 <div className="my-4 flex items-center justify-center">
@@ -468,6 +465,7 @@ export default function HomePage() {
                 </div>
               )}
             </TabItem>
+
             <TabItem title="บริการ" icon={HiClipboardList}>
               <div className="flex flex-col items-center">
                 <button
@@ -523,6 +521,7 @@ export default function HomePage() {
           </form>
         )}
       </div>
+
       <Notification
         show={notification.show}
         type={notification.type}

@@ -20,8 +20,8 @@ body {
 
 html,
 body {
-  touch-action: pan-x pan-y; /* Allows scrolling but not zooming */
-  overscroll-behavior: none; /* Prevents pull-to-refresh or overscroll effects */
+  touch-action: auto; /* ให้ browser จัดการเอง */
+  overscroll-behavior: auto; /* คืนค่า default */
 }
 
 input,
@@ -203,4 +203,21 @@ select:focus {
     transform: translateY(66%) scale(0.65);
     opacity: 0.8;
   }
+}
+
+/* Hide scrollbar but keep scrolling */
+
+/* Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+html {
+  scrollbar-width: none; /* hides scrollbar but allows scroll */
+}
+
+/* IE/Edge Legacy */
+html {
+  -ms-overflow-style: none;
 }
