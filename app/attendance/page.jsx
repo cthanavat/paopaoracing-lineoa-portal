@@ -32,7 +32,17 @@ export default function AttendancePage() {
   const router = useRouter();
 
   // Global state from Zustand
-  const { user, member, memberAll, config } = useAppStore();
+  const {
+    user,
+    config,
+    member,
+    setMember,
+    memberAll,
+    employees,
+    setEmployees,
+    loadingEmployees,
+    setLoadingEmployees,
+  } = useAppStore();
 
   // Local UI states
   const [notification, setNotification] = useState({
@@ -107,7 +117,40 @@ export default function AttendancePage() {
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, member, config]);
-
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        const res = await fetch("/api/gSheet/get", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sheet: {
+              sheetId: `${config.employees.sheetId}`,
+              range: `${config.employees.range}`,
+            },
+          }),
+        });
+        const result = await res.json();
+        if (result.data) {
+          setEmployees(
+            result.data.filter(
+              (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
+            ),
+          );
+          console.log(
+            result.data.filter(
+              (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
+            ),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load employees:", error);
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+    loadEmployees();
+  }, []);
   const loadAttendanceData = async (userId) => {
     try {
       const today = new Date().toISOString().split("T")[0];
