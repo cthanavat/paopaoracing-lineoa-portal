@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { HiIdentification, HiOutlineClock } from "react-icons/hi2";
-import { useAppStore } from "@/store/useAppStore"; // keep alias if store is already working
+import { useAppStore } from "@/store/useAppStore";
+import React from "react";
 
-export default function BottomNav() {
+const BottomNav: React.FC = () => {
   const { member } = useAppStore();
 
   // Only render BottomNav if user is admin
@@ -37,4 +38,6 @@ export default function BottomNav() {
       </div>
     </div>
   );
-}
+};
+
+export default BottomNav;

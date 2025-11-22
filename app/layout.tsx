@@ -1,5 +1,11 @@
 import "./globals.css";
 import BottomNav from "./components/BottomNav";
+import { Kanit } from "next/font/google";
+
+const kanit = Kanit({
+  subsets: ["latin", "thai"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata = {
   title: "Paopao Racing Line OA Portal",
@@ -15,7 +21,7 @@ export default function RootLayout({ children }) {
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className={kanit.className}>
         {children}
         <BottomNav />
       </body>

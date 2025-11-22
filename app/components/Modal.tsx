@@ -1,7 +1,21 @@
 "use client";
 import React from "react";
 
-const Modal = ({ isOpen, onClose, title, message, onConfirm }) => {
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  message?: string;
+  onConfirm?: () => void;
+}
+
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+  onConfirm,
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -47,6 +61,12 @@ const Modal = ({ isOpen, onClose, title, message, onConfirm }) => {
                 d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
               />
             </svg>
+
+            {title && (
+              <h3 className="mb-2 text-lg font-normal text-gray-500">
+                {title}
+              </h3>
+            )}
 
             {message && <p className="text-md mb-5 text-gray-800">{message}</p>}
 

@@ -1,12 +1,19 @@
 "use client";
 
 import Image from "next/image";
+import React from "react";
 
-export default function UserProfile({
+interface UserProfileProps {
+  displayName: string;
+  pictureUrl?: string;
+  statusMessage?: string;
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({
   displayName,
   pictureUrl,
   statusMessage,
-}) {
+}) => {
   return (
     <div className="mt-8 mb-2 flex items-center justify-center">
       <div className="relative h-20 w-20 overflow-hidden rounded-full">
@@ -26,4 +33,6 @@ export default function UserProfile({
       </div>
     </div>
   );
-}
+};
+
+export default UserProfile;

@@ -26,6 +26,7 @@ import {
   HiCalendar,
   HiHome,
   HiUserCircle,
+  HiClipboardCheck,
 } from "react-icons/hi";
 
 export default function AttendancePage() {
@@ -61,18 +62,19 @@ export default function AttendancePage() {
   const [leaveHistory, setLeaveHistory] = useState([]);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState("checkin");
+  // const [activeTab, setActiveTab] = useState("checkin");
 
   // Monthly leave request
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
   );
+
   const [leaveForm, setLeaveForm] = useState({
-    leaveType: "ลาป่วย",
-    reason: "",
-    dateFrom: "",
-    dateTo: "",
+    date: "",
+    leave_option: "1 วัน",
+    reason: "วันหยุด",
+    detail: "",
   });
 
   useEffect(() => {
@@ -217,14 +219,15 @@ export default function AttendancePage() {
         const userLeaves = leaveResult.data
           .filter((r) => r.userId === userId)
           .map((r) => ({
-            date: r.date || "", // single-date requests
-            dateFrom: r.dateFrom || "",
-            dateTo: r.dateTo || "",
-            userId: r.userId || "",
-            userName: r.userName || "",
-            leaveType: r.leaveType || "",
+            id: r.leave_id || "", // single-date requests
+            created_at: r.created_at || "",
+            employee_id: r.employee_id || "",
+            date: r.date || "",
+            leave_option: r.leave_option || "",
+            days: r.days || "",
             reason: r.reason || "",
-            status: r.status || "pending",
+            detail: r.detail || "",
+            approval: r.approval || "FALSE",
           }))
           .sort(
             (a, b) =>
@@ -353,7 +356,7 @@ export default function AttendancePage() {
 
     try {
       // Validate date range
-      if (!leaveForm.dateFrom || !leaveForm.dateTo) {
+      if (!leaveForm.date) {
         setNotification({
           show: true,
           message: "กรุณาเลือกวันที่ลา",
@@ -362,34 +365,43 @@ export default function AttendancePage() {
         setActionLoading(false);
         return;
       }
-      const from = new Date(leaveForm.dateFrom);
-      const to = new Date(leaveForm.dateTo);
-      if (to < from) {
-        setNotification({
-          show: true,
-          message: "ช่วงวันที่ไม่ถูกต้อง",
-          type: "warning",
-        });
-        setActionLoading(false);
-        return;
-      }
+      // const from = new Date(leaveForm.dateFrom);
+      // const to = new Date(leaveForm.dateTo);
+      // if (to < from) {
+      //   setNotification({
+      //     show: true,
+      //     message: "ช่วงวันที่ไม่ถูกต้อง",
+      //     type: "warning",
+      //   });
+      //   setActionLoading(false);
+      //   return;
+      // }
 
-      const today = new Date().toISOString().split("T")[0];
+      var days = 0;
+      if (leaveForm.leave_option === "ครึ่งวัน") {
+        days = 0.5;
+      } else if (leaveForm.leave_option === "1 วัน") {
+        days = 1;
+      } else if (leaveForm.leave_option === "2 วัน") {
+        days = 2;
+      }
 
       const res = await fetch("/api/gSheet/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sheetId: process.env.NEXT_PUBLIC_CONFIG_SHEET_ID,
-          range: "leave!A:G",
+          sheetId: `${config.employee_leaves.sheetId}`,
+          range: `${config.employee_leaves.range}`,
           newRow: [
-            today, // createdAt / request date
-            user.userId,
-            member.name,
-            leaveForm.leaveType,
+            "",
+            new Date().toISOString(),
+            employee.employee_id,
+            leaveForm.date, // createdAt / request date
+            leaveForm.leave_option,
+            days,
             leaveForm.reason,
-            leaveForm.dateFrom,
-            leaveForm.dateTo,
+            leaveForm.detail,
+            "FALSE",
           ],
         }),
       });
@@ -402,13 +414,12 @@ export default function AttendancePage() {
           type: "success",
         });
         setLeaveForm({
-          leaveType: "ลาป่วย",
-          reason: "",
-          dateFrom: "",
-          dateTo: "",
+          leave_option: "1 วัน",
+          reason: "วันหยุด",
+          date: "",
         });
         await loadLeaveData(user.userId);
-        setActiveTab("leave");
+        // setActiveTab("leave");
       } else {
         throw new Error("Leave request failed");
       }
@@ -500,76 +511,73 @@ export default function AttendancePage() {
           icon={HiClock}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-md space-y-4">
-            <Card>
-              <h3 className="text-center text-lg font-semibold text-gray-800">
-                สถานะวันนี้
-              </h3>
-              <p className="text-center text-sm text-gray-500">
-                {todayFormatted}
-              </p>
+          <div className="mx-auto max-w-xs">
+            <p className="text-md text-center font-semibold text-gray-900">
+              วันที่ {todayFormatted}
+            </p>
 
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="rounded-lg bg-green-50 p-4">
-                  <div className="mb-2 flex items-center space-x-2 text-green-600">
-                    <HiLogin className="h-5 w-5" />
-                    <span className="font-medium">เข้างาน</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-700">
-                    {todayRecord?.checkIn || "--:--:--"}
-                  </p>
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <div className="rounded-lg bg-green-50 p-4">
+                <div className="mb-2 flex items-center space-x-2 text-green-600">
+                  <HiLogin className="h-5 w-5" />
+                  <span className="font-medium">เข้างาน</span>
                 </div>
-
-                <div className="rounded-lg bg-red-50 p-4">
-                  <div className="mb-2 flex items-center space-x-2 text-red-600">
-                    <HiLogout className="h-5 w-5" />
-                    <span className="font-medium">ออกงาน</span>
-                  </div>
-                  <p className="text-2xl font-bold text-red-700">
-                    {todayRecord?.checkOut || "--:--:--"}
-                  </p>
-                </div>
+                <p className="text-2xl text-green-700">
+                  {todayRecord?.checkIn || "--:--:--"}
+                </p>
               </div>
 
-              <div className="mt-6 space-y-3">
-                {!todayRecord && (
-                  <Button
-                    onClick={handleCheckIn}
-                    disabled={actionLoading}
-                    color="success"
-                    className="w-full"
-                    size="lg"
-                  >
-                    <HiLogin className="mr-2 h-5 w-5" />
-                    {actionLoading ? "กำลังบันทึก..." : "เช็คอิน"}
-                  </Button>
-                )}
-
-                {todayRecord && !todayRecord.checkOut && (
-                  <Button
-                    onClick={handleCheckOut}
-                    disabled={actionLoading}
-                    color="failure"
-                    className="w-full"
-                    size="lg"
-                  >
-                    <HiLogout className="mr-2 h-5 w-5" />
-                    {actionLoading ? "กำลังบันทึก..." : "เช็คเอาท์"}
-                  </Button>
-                )}
-
-                {todayRecord?.checkOut && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-                    <p className="font-medium text-blue-700">
-                      ✅ บันทึกเวลาเรียบร้อยแล้ว
-                    </p>
-                    <p className="text-sm text-blue-600">
-                      ทำงาน: {todayRecord.workHours || "-"}
-                    </p>
-                  </div>
-                )}
+              <div className="rounded-lg bg-red-50 p-4">
+                <div className="mb-2 flex items-center space-x-2 text-red-600">
+                  <HiLogout className="h-5 w-5" />
+                  <span className="font-medium">ออกงาน</span>
+                </div>
+                <p className="text-2xl text-red-700">
+                  {todayRecord?.checkOut || "--:--:--"}
+                </p>
               </div>
-            </Card>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {!todayRecord && (
+                <Button
+                  onClick={handleCheckIn}
+                  disabled={actionLoading}
+                  color="success"
+                  className="hover:bg-black-800 w-full rounded-full bg-green-700 py-2 text-sm font-medium text-white hover:opacity-90"
+                  size="md"
+                >
+                  <HiLogin className="mr-2 h-5 w-5" />
+                  {actionLoading ? "กำลังบันทึก..." : "เช็คอิน"}
+                </Button>
+              )}
+
+              {todayRecord && !todayRecord.checkOut && (
+                <Button
+                  onClick={handleCheckOut}
+                  disabled={actionLoading}
+                  color="failure"
+                  className="hover:bg-black-800 w-full rounded-full bg-red-700 py-2 text-sm font-medium text-white hover:opacity-90"
+                  size="md"
+                >
+                  <HiLogout className="mr-2 h-5 w-5" />
+                  {actionLoading ? "กำลังบันทึก..." : "เช็คเอาท์"}
+                </Button>
+              )}
+
+              {todayRecord?.checkOut && (
+                <div className="rounded-lg bg-blue-50 p-3 text-center">
+                  <div className="mb-2 flex items-center justify-center space-x-2">
+                    <HiClipboardCheck className="h-5 w-5" />
+                    <span className="font-medium">บันทึกเวลาเรียบร้อยแล้ว</span>
+                  </div>
+                  <p className="text-sm">
+                    ทำงาน: {todayRecord.workHours || "-"}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div> day off all of employe incoming</div>
           </div>
         </TabItem>
         <TabItem
@@ -579,10 +587,6 @@ export default function AttendancePage() {
           className="flex items-center justify-center"
         >
           <div className="mx-auto max-w-md space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              ประวัติการเข้างาน
-            </h3>
-
             {attendanceHistory.length === 0 ? (
               <Card>
                 <p className="text-center text-gray-500">ยังไม่มีประวัติ</p>
@@ -590,7 +594,7 @@ export default function AttendancePage() {
             ) : (
               <Timeline>
                 {attendanceHistory.map((record, idx) => (
-                  <TimelineItem key={idx}>
+                  <TimelineItem key={idx} className="mb-1 ml-4">
                     <TimelinePoint />
                     <TimelineContent>
                       <TimelineTime>
@@ -600,11 +604,13 @@ export default function AttendancePage() {
                           day: "numeric",
                         })}
                       </TimelineTime>
-                      <TimelineTitle>
-                        {record.status === "completed"
-                          ? "เสร็จสิ้น"
-                          : "กำลังทำงาน"}
-                      </TimelineTitle>
+                      {record.status !== "completed" && (
+                        <TimelineTitle>
+                          {record.status === "checking_in"
+                            ? "กำลังบันทึก"
+                            : "กำลังทำงาน"}
+                        </TimelineTitle>
+                      )}
                       <TimelineBody>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
@@ -622,7 +628,7 @@ export default function AttendancePage() {
                         </div>
                         {record.workHours && (
                           <p className="mt-1 text-sm text-gray-600">
-                            ทำงาน: {record.workHours}
+                            {/* ทำงาน: {record.workHours} */}
                           </p>
                         )}
                       </TimelineBody>
@@ -639,167 +645,95 @@ export default function AttendancePage() {
           icon={HiLogout}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-xs space-y-6">
-            <Card>
-              <h3 className="mb-4 text-lg font-semibold text-gray-800">
-                ขอลา/หยุด
-              </h3>
-              <div className="mb-4">
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  เลือกเดือน
+          <div className="mx-auto max-w-xs min-w-2xs space-y-6 px-4">
+            {/* <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                เลือกเดือน
+              </label>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+              />
+            </div> */}
+            <form onSubmit={handleLeaveSubmit} className="space-y-4">
+              <div className="mb-2">
+                <label className="mb-1 block text-sm text-gray-700">
+                  วันที่
                 </label>
                 <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  type="date"
+                  value={leaveForm.date}
+                  onChange={(e) =>
+                    setLeaveForm({ ...leaveForm, date: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  required
+                />
+              </div>
+              <div className="mb-2">
+                <label className="mb-1 block text-sm text-gray-700">
+                  จำนวน
+                </label>
+                <select
+                  value={leaveForm.leave_option}
+                  onChange={(e) =>
+                    setLeaveForm({
+                      ...leaveForm,
+                      leave_option: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                >
+                  <option value="ครึ่งวัน">ครึ่งวัน</option>
+                  <option value="1 วัน">1 วัน</option>
+                  <option value="2 วัน">2 วัน</option>
+                </select>
+              </div>
+
+              <div className="mb-2">
+                <label className="mb-1 block text-sm text-gray-700">
+                  ประเภทการลา
+                </label>
+                <select
+                  value={leaveForm.reason}
+                  onChange={(e) =>
+                    setLeaveForm({ ...leaveForm, reason: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                >
+                  <option value="ลาป่วย">วันหยุด</option>
+                  <option value="ลาป่วย">ลาป่วย</option>
+                  <option value="ลากิจ">ลากิจ</option>
+                </select>
+              </div>
+
+              <div className="mb-2">
+                <label className="mb-1 block text-sm text-gray-700">
+                  เหตุผล
+                </label>
+                <textarea
+                  value={leaveForm.detail}
+                  onChange={(e) =>
+                    setLeaveForm({ ...leaveForm, detail: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  placeholder="ระบุเหตุผลการลา..."
                 />
               </div>
 
-              <form onSubmit={handleLeaveSubmit} className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    ประเภทการลา
-                  </label>
-                  <select
-                    value={leaveForm.leaveType}
-                    onChange={(e) =>
-                      setLeaveForm({ ...leaveForm, leaveType: e.target.value })
-                    }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="ลาป่วย">ลาป่วย</option>
-                    <option value="ลากิจ">ลากิจ</option>
-                    <option value="ลาพักร้อน">ลาพักร้อน</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
-                      ตั้งแต่วันที่
-                    </label>
-                    <input
-                      type="date"
-                      value={leaveForm.dateFrom}
-                      onChange={(e) =>
-                        setLeaveForm({ ...leaveForm, dateFrom: e.target.value })
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
-                      ถึงวันที่
-                    </label>
-                    <input
-                      type="date"
-                      value={leaveForm.dateTo}
-                      onChange={(e) =>
-                        setLeaveForm({ ...leaveForm, dateTo: e.target.value })
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    เหตุผล
-                  </label>
-                  <textarea
-                    value={leaveForm.reason}
-                    onChange={(e) =>
-                      setLeaveForm({ ...leaveForm, reason: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    placeholder="ระบุเหตุผลการลา..."
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={actionLoading}
-                  color="blue"
-                  className="w-full"
-                  size="lg"
-                >
-                  {actionLoading ? "กำลังส่ง..." : "ส่งคำขอลา"}
-                </Button>
-              </form>
-            </Card>
-
+              <Button
+                type="submit"
+                disabled={actionLoading}
+                className="text-md w-full rounded-full bg-orange-400 py-2 font-medium text-white hover:bg-red-800 hover:opacity-90"
+                size="md"
+              >
+                {actionLoading ? "กำลังส่ง..." : "ส่งคำขอลา"}
+              </Button>
+            </form>
             {/* Monthly summary */}
-            <Card>
-              <h3 className="mb-3 text-lg font-semibold text-gray-800">
-                สรุปการลาในเดือนนี้
-              </h3>
-              {Object.keys(monthLeaveSummary).length === 0 ? (
-                <p className="text-gray-500">ยังไม่มีการลาในเดือนนี้</p>
-              ) : (
-                <div className="space-y-2">
-                  {Object.entries(monthLeaveSummary).map(([type, data]) => (
-                    <div
-                      key={type}
-                      className="flex items-center justify-between rounded border p-3"
-                    >
-                      <span className="font-medium">{type}</span>
-                      <span className="text-sm text-gray-700">
-                        จำนวน {data.count} ครั้ง • รวม {data.days} วัน
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            {/* Monthly leave timeline */}
-            <Card>
-              <h3 className="mb-3 text-lg font-semibold text-gray-800">
-                คำขอลาของเดือนที่เลือก
-              </h3>
-              {monthLeaves.length === 0 ? (
-                <p className="text-gray-500">ยังไม่มีคำขอ</p>
-              ) : (
-                <Timeline>
-                  {monthLeaves.map((record, idx) => (
-                    <TimelineItem key={idx}>
-                      <TimelinePoint />
-                      <TimelineContent>
-                        <TimelineTime>
-                          {record.dateFrom
-                            ? `${new Date(record.dateFrom).toLocaleDateString("th-TH")} - ${new Date(record.dateTo).toLocaleDateString("th-TH")}`
-                            : new Date(record.date).toLocaleDateString("th-TH")}
-                        </TimelineTime>
-                        <TimelineTitle>{record.leaveType}</TimelineTitle>
-                        <TimelineBody>
-                          <p className="text-sm">{record.reason}</p>
-                          <span
-                            className={`mt-1 inline-block rounded px-2 py-1 text-xs ${
-                              record.status === "approved"
-                                ? "bg-green-100 text-green-700"
-                                : record.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            {record.status === "approved"
-                              ? "อนุมัติ"
-                              : record.status === "rejected"
-                                ? "ไม่อนุมัติ"
-                                : "รอพิจารณา"}
-                          </span>
-                        </TimelineBody>
-                      </TimelineContent>
-                    </TimelineItem>
-                  ))}
-                </Timeline>
-              )}
-            </Card>
           </div>
         </TabItem>
       </Tabs>

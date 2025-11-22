@@ -1,6 +1,8 @@
 "use client";
 
-export default function Loader() {
+import React from "react";
+
+const Loader: React.FC = () => {
   return (
     <div className="three-body">
       <div className="three-body__dot"></div>
@@ -8,4 +10,6 @@ export default function Loader() {
       <div className="three-body__dot"></div>
     </div>
   );
-}
+};
+
+export default Loader;
