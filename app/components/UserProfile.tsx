@@ -23,6 +23,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
           fill
           sizes="56px"
           className="object-cover"
+          priority
         />
       </div>
       <div className="ml-4">

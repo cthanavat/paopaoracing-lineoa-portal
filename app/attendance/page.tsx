@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAppStore } from "@/store/useAppStore";
-import UserProfile from "@/app/components/UserProfile";
-import Loader from "@/app/components/Loader";
-import Notification from "@/app/components/Notification";
+import { useEffect, useState, useRef } from "react";
+import { useAppData } from "../../hooks/useAppData";
+import { useLiff } from "../../hooks/useLiff";
+import { useAppStore } from "../../store/useAppStore";
+import UserProfile from "../components/UserProfile";
+import Loader from "../components/Loader";
+import Notification from "../components/Notification";
 import {
   Button,
   Card,
@@ -24,56 +25,118 @@ import {
   HiLogin,
   HiLogout,
   HiCalendar,
-  HiHome,
-  HiUserCircle,
   HiClipboardCheck,
 } from "react-icons/hi";
 
-export default function AttendancePage() {
-  const router = useRouter();
+interface AttendanceRecord {
+  attendance_id: string;
+  created_at: string;
+  employee_id: string;
+  date: string;
+  userId: string;
+  userName: string;
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  workHours: string;
+}
 
-  // Global state from Zustand
+interface LeaveRecord {
+  id: string;
+  created_at: string;
+  employee_id: string;
+  date: string;
+  leave_option: string;
+  days: string;
+  reason: string;
+  detail: string;
+  approval: string;
+  dateFrom?: string;
+  dateTo?: string;
+  leaveType?: string;
+}
+
+const LeaveRequestList = ({ leaves }: { leaves: LeaveRecord[] }) => {
+  return (
+    <div className="mt-8 border-t pt-6">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">ประวัติการลา</h3>
+      {leaves.length === 0 ? (
+        <p className="text-center text-gray-500">ไม่พบประวัติการลา</p>
+      ) : (
+        <div className="space-y-3">
+          {leaves.map((leave, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {new Date(leave.date).toLocaleDateString("th-TH", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {leave.leave_option} - {leave.reason}
+                  </p>
+                  {leave.detail && (
+                    <p className="mt-1 text-xs text-gray-500">{leave.detail}</p>
+                  )}
+                </div>
+                <span
+                  className={`rounded-full px-2 py-1 text-xs font-medium ${
+                    leave.approval === "TRUE"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {leave.approval === "TRUE" ? "อนุมัติ" : "รออนุมัติ"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function AttendancePage() {
   const {
     user,
+    isLiffReady,
     config,
     member,
-    setMember,
-    memberAll,
     employee,
     setEmployee,
-    employees,
-    setEmployees,
-    loadingEmployees,
-    setLoadingEmployees,
+    loadMember,
   } = useAppStore();
+  // initLiff is automatic in useLiff hook
+  useLiff();
+  useAppData(); // Fetch app data (config, members, etc.)
 
-  // Local UI states
+  const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState({
     show: false,
     message: "",
     type: "success",
   });
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Attendance & leave states
-  const [todayRecord, setTodayRecord] = useState(null);
-  const [attendanceHistory, setAttendanceHistory] = useState([]);
-  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
+  const [attendanceHistory, setAttendanceHistory] = useState<
+    AttendanceRecord[]
+  >([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveRecord[]>([]);
 
-  // Tabs
-  // const [activeTab, setActiveTab] = useState("checkin");
-
-  // Monthly leave request
-  const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
-  );
-
+  // Leave form
   const [leaveForm, setLeaveForm] = useState({
-    date: "",
     leave_option: "1 วัน",
     reason: "วันหยุด",
+    date: "",
     detail: "",
   });
 
@@ -87,29 +150,69 @@ export default function AttendancePage() {
     }
   }, [notification.show]);
 
+  const dataLoadedRef = useRef<string | null>(null);
+
   useEffect(() => {
     const bootstrap = async () => {
+      // console.log("🔄 Bootstrap called", {
+      //   isLiffReady,
+      //   user: user?.userId,
+      //   member: member?.userId,
+      //   loadMember,
+      // });
+
+      if (!isLiffReady) {
+        console.log("⏸️ LIFF not ready yet");
+        return;
+      }
+
+      // Proceed if LIFF is ready OR if we already have a user (from storage)
+      if (!isLiffReady && !user) {
+        console.log("⏸️ LIFF not ready and no user");
+        return;
+      }
+
+      // 1. Check User first
+      if (!user) {
+        console.log("⏸️ No user, stopping loading");
+        setLoading(false);
+        return;
+      }
+
+      // 2. If user exists, check if member is still loading
+      if (loadMember) {
+        console.log("⏸️ Member is still loading...");
+        setLoading(true);
+        return;
+      }
+
+      // 3. Check if member exists
+      if (!member) {
+        console.log("⏸️ No member found, stopping loading");
+        setLoading(false);
+        return;
+      }
+
+      // Prevent re-fetching if already loaded for this user
+      if (dataLoadedRef.current === user.userId) {
+        console.log("✅ Data already loaded for this user");
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Ensure login
-        if (!user) {
-          router.push("/");
-          return;
-        }
-        // Ensure member exists
-        if (!member) {
-          setNotification({
-            show: true,
-            message: "กำลังโหลดข้อมูลสมาชิก...",
-            type: "info",
-          });
-          return;
-        }
+        console.log("🚀 Starting data fetch for user");
+        setLoading(true);
+
         // Load attendance & leave data
-        await loadEmployees(user.user);
+        await loadEmployees();
         await loadAttendanceData(user.userId);
         await loadLeaveData(user.userId);
+
+        dataLoadedRef.current = user.userId;
+        console.log("✅ All data loaded successfully");
       } catch (error) {
-        console.error("Initialize error:", error);
+        console.error("❌ Initialize error:", error);
         setNotification({
           show: true,
           message: "เกิดข้อผิดพลาดในการโหลดข้อมูล",
@@ -121,7 +224,7 @@ export default function AttendancePage() {
     };
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, member, config]);
+  }, [user, member, config, isLiffReady, loadMember]);
 
   const loadEmployees = async () => {
     try {
@@ -137,27 +240,33 @@ export default function AttendancePage() {
       });
       const result = await res.json();
       if (result.data) {
-        setEmployees(
-          result.data.filter(
-            (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
-          ),
-        );
+        // setEmployees(
+        //   result.data.filter(
+        //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        //     (e: any) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
+        //   ),
+        // );
         // console.log(
         //   result.data.filter(
         //     (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
         //   ),
         // );
 
-        setEmployee(result.data.filter((e) => e.userId === member.userId)[0]);
-        console.log("loaded employee");
+        if (member) {
+          const foundEmployee = result.data.filter(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (e: any) => e.userId === member.userId,
+          )[0];
+          setEmployee(foundEmployee || null);
+        }
       }
     } catch (error) {
       console.error("Failed to load employees:", error);
     } finally {
-      setLoadingEmployees(false);
+      // setLoadingEmployees(false);
     }
   };
-  const loadAttendanceData = async (userId) => {
+  const loadAttendanceData = async (userId: string) => {
     try {
       const today = new Date().toISOString().split("T")[0];
 
@@ -173,10 +282,11 @@ export default function AttendancePage() {
       });
       const attendanceResult = await attendanceRes.json();
       if (attendanceResult.data) {
-        console.log("loadAttendanceData", employee);
         const userRecords = attendanceResult.data
-          .filter((r) => r.userId === userId)
-          .map((r) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .filter((r: any) => r.userId === userId)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((r: any) => ({
             attendance_id: r.attendance_id || "",
             created_at: r.created_at || "",
             employee_id: r.employee_id || "",
@@ -188,9 +298,14 @@ export default function AttendancePage() {
             status: r.status || "",
             workHours: r.workHours || "",
           }))
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
+          .sort(
+            (a: AttendanceRecord, b: AttendanceRecord) =>
+              new Date(b.date).getTime() - new Date(a.date).getTime(),
+          );
         setAttendanceHistory(userRecords);
-        setTodayRecord(userRecords.find((r) => r.date === today) || null);
+        setTodayRecord(
+          userRecords.find((r: AttendanceRecord) => r.date === today) || null,
+        );
       }
     } catch (error) {
       console.error("Load attendance error:", error);
@@ -202,7 +317,7 @@ export default function AttendancePage() {
     }
   };
 
-  const loadLeaveData = async (userId) => {
+  const loadLeaveData = async (userId: string) => {
     try {
       const leaveRes = await fetch("/api/gSheet/get", {
         method: "POST",
@@ -217,8 +332,10 @@ export default function AttendancePage() {
       const leaveResult = await leaveRes.json();
       if (leaveResult.data) {
         const userLeaves = leaveResult.data
-          .filter((r) => r.userId === userId)
-          .map((r) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .filter((r: any) => r.userId === userId)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((r: any) => ({
             id: r.leave_id || "", // single-date requests
             created_at: r.created_at || "",
             employee_id: r.employee_id || "",
@@ -230,8 +347,9 @@ export default function AttendancePage() {
             approval: r.approval || "FALSE",
           }))
           .sort(
-            (a, b) =>
-              new Date(b.date || b.dateFrom) - new Date(a.date || a.dateFrom),
+            (a: LeaveRecord, b: LeaveRecord) =>
+              new Date(b.date || b.dateFrom || "").getTime() -
+              new Date(a.date || a.dateFrom || "").getTime(),
           );
         setLeaveHistory(userLeaves);
       }
@@ -247,6 +365,7 @@ export default function AttendancePage() {
 
   const handleCheckIn = async () => {
     if (!user || !member) return;
+    console.log("🕒 Check-in requested...");
     setActionLoading(true);
     try {
       const now = new Date();
@@ -277,6 +396,7 @@ export default function AttendancePage() {
 
       const result = await res.json();
       if (result.success) {
+        console.log("✅ Check-in successful.");
         setNotification({
           show: true,
           message: `เช็คอินสำเร็จ เวลา ${time}`,
@@ -287,7 +407,7 @@ export default function AttendancePage() {
         throw new Error("Check-in failed");
       }
     } catch (error) {
-      console.error("Check-in error:", error);
+      console.error("❌ Check-in error:", error);
       setNotification({
         show: true,
         message: "เกิดข้อผิดพลาดในการเช็คอิน",
@@ -300,6 +420,7 @@ export default function AttendancePage() {
 
   const handleCheckOut = async () => {
     if (!user || !todayRecord) return;
+    console.log("🕒 Check-out requested...");
     setActionLoading(true);
     try {
       const now = new Date();
@@ -307,7 +428,7 @@ export default function AttendancePage() {
 
       const checkInTime = new Date(`2000-01-01 ${todayRecord.checkIn}`);
       const checkOutTime = new Date(`2000-01-01 ${time}`);
-      const diffMs = checkOutTime - checkInTime;
+      const diffMs = checkOutTime.getTime() - checkInTime.getTime();
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const workHours = `${hours}:${String(minutes).padStart(2, "0")}`;
@@ -328,6 +449,7 @@ export default function AttendancePage() {
 
       const result = await res.json();
       if (result.success) {
+        console.log("✅ Check-out successful.");
         setNotification({
           show: true,
           message: `เช็คเอาท์สำเร็จ เวลา ${time} (ทำงาน ${workHours} ชั่วโมง)`,
@@ -338,7 +460,7 @@ export default function AttendancePage() {
         throw new Error("Check-out failed");
       }
     } catch (error) {
-      console.error("Check-out error:", error);
+      console.error("❌ Check-out error:", error);
       setNotification({
         show: true,
         message: "เกิดข้อผิดพลาดในการเช็คเอาท์",
@@ -349,9 +471,10 @@ export default function AttendancePage() {
     }
   };
 
-  const handleLeaveSubmit = async (e) => {
+  const handleLeaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !member) return;
+    console.log("📝 Leave request submitting...");
     setActionLoading(true);
 
     try {
@@ -377,7 +500,7 @@ export default function AttendancePage() {
       //   return;
       // }
 
-      var days = 0;
+      let days = 0;
       if (leaveForm.leave_option === "ครึ่งวัน") {
         days = 0.5;
       } else if (leaveForm.leave_option === "1 วัน") {
@@ -395,7 +518,8 @@ export default function AttendancePage() {
           newRow: [
             "",
             new Date().toISOString(),
-            employee.employee_id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (employee as any).employee_id,
             leaveForm.date, // createdAt / request date
             leaveForm.leave_option,
             days,
@@ -408,6 +532,7 @@ export default function AttendancePage() {
 
       const result = await res.json();
       if (result.success) {
+        console.log("✅ Leave request submitted successfully.");
         setNotification({
           show: true,
           message: "ส่งคำขอลาสำเร็จ",
@@ -417,6 +542,7 @@ export default function AttendancePage() {
           leave_option: "1 วัน",
           reason: "วันหยุด",
           date: "",
+          detail: "",
         });
         await loadLeaveData(user.userId);
         // setActiveTab("leave");
@@ -424,7 +550,7 @@ export default function AttendancePage() {
         throw new Error("Leave request failed");
       }
     } catch (error) {
-      console.error("Leave request error:", error);
+      console.error("❌ Leave request error:", error);
       setNotification({
         show: true,
         message: "เกิดข้อผิดพลาดในการส่งคำขอลา",
@@ -436,37 +562,37 @@ export default function AttendancePage() {
   };
 
   // Monthly filter for leave records
-  const monthLeaves = useMemo(() => {
-    const [year, month] = selectedMonth.split("-");
-    return leaveHistory.filter((r) => {
-      const baseDate = r.date || r.dateFrom || "";
-      if (!baseDate) return false;
-      const d = new Date(baseDate);
-      return (
-        d.getFullYear() === Number(year) && d.getMonth() + 1 === Number(month)
-      );
-    });
-  }, [leaveHistory, selectedMonth]);
+  // const monthLeaves = useMemo(() => {
+  //   const [year, month] = selectedMonth.split("-");
+  //   return leaveHistory.filter((r) => {
+  //     const baseDate = r.date || r.dateFrom || "";
+  //     if (!baseDate) return false;
+  //     const d = new Date(baseDate);
+  //     return (
+  //       d.getFullYear() === Number(year) && d.getMonth() + 1 === Number(month)
+  //     );
+  //   });
+  // }, [leaveHistory, selectedMonth]);
 
-  const monthLeaveSummary = useMemo(() => {
-    // Count by leaveType and days
-    const summary = {};
-    for (const r of monthLeaves) {
-      const type = r.leaveType || "อื่นๆ";
-      if (!summary[type]) summary[type] = { count: 0, days: 0 };
-      summary[type].count += 1;
+  // const monthLeaveSummary = useMemo(() => {
+  //   // Count by leaveType and days
+  //   const summary = {};
+  //   for (const r of monthLeaves) {
+  //     const type = r.leaveType || "อื่นๆ";
+  //     if (!summary[type]) summary[type] = { count: 0, days: 0 };
+  //     summary[type].count += 1;
 
-      // Calculate number of days in the period
-      const start = new Date(r.dateFrom || r.date);
-      const end = new Date(r.dateTo || r.date);
-      const diffDays = Math.max(
-        1,
-        Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1,
-      );
-      summary[type].days += diffDays;
-    }
-    return summary;
-  }, [monthLeaves]);
+  //     // Calculate number of days in the period
+  //     const start = new Date(r.dateFrom || r.date);
+  //     const end = new Date(r.dateTo || r.date);
+  //     const diffDays = Math.max(
+  //       1,
+  //       Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1,
+  //     );
+  //     summary[type].days += diffDays;
+  //   }
+  //   return summary;
+  // }, [monthLeaves]);
 
   if (loading) {
     return (
@@ -498,6 +624,20 @@ export default function AttendancePage() {
           pictureUrl={user.pictureUrl}
           statusMessage={user.statusMessage}
         />
+        {!useAppStore.getState().isInClient && (
+          <div className="mt-2 flex justify-center">
+            <Button
+              color="light"
+              size="xs"
+              onClick={() => {
+                localStorage.removeItem("line-user");
+                window.location.reload();
+              }}
+            >
+              Logout
+            </Button>
+          </div>
+        )}
       </div>
       {/* Navigation tabs */}
       <Tabs
@@ -734,6 +874,7 @@ export default function AttendancePage() {
               </Button>
             </form>
             {/* Monthly summary */}
+            <LeaveRequestList leaves={leaveHistory} />
           </div>
         </TabItem>
       </Tabs>

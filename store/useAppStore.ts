@@ -48,6 +48,7 @@ interface AppState {
   loadHistory: boolean;
   isLiffReady: boolean;
   isLiffLoading: boolean;
+  isInClient: boolean; // New state to track if running in LIFF browser
   hasHydrated: boolean;
   loadingEmployees: boolean;
   firstLoad: boolean;
@@ -68,6 +69,7 @@ interface AppState {
   setLoadingEmployees: (loadingEmployees: boolean) => void;
   setIsLiffReady: (isLiffReady: boolean) => void;
   setIsLiffLoading: (isLiffLoading: boolean) => void;
+  setIsInClient: (isInClient: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -83,6 +85,7 @@ export const useAppStore = create<AppState>((set) => ({
   loadHistory: true,
   isLiffReady: false,
   isLiffLoading: true,
+  isInClient: false, // Default to false
   hasHydrated: false,
   loadingEmployees: false,
   firstLoad: true,
@@ -101,4 +104,5 @@ export const useAppStore = create<AppState>((set) => ({
   setLoadingEmployees: (loadingEmployees) => set({ loadingEmployees }),
   setIsLiffReady: (isLiffReady) => set({ isLiffReady }),
   setIsLiffLoading: (isLiffLoading) => set({ isLiffLoading }),
+  setIsInClient: (isInClient) => set({ isInClient }),
 }));

@@ -35,12 +35,28 @@ export default function HomePage() {
   // Handle errors from hooks
   useEffect(() => {
     if (liffError) {
+      console.error("❌ LIFF Error");
       setNotification({ show: true, message: liffError, type: "error" });
     }
     if (appDataError) {
+      console.error("❌ App Data Error");
       setNotification({ show: true, message: appDataError, type: "error" });
     }
   }, [liffError, appDataError]);
+
+  useEffect(() => {
+    if (!loadUser && user) {
+      console.log("✅ User loaded");
+    }
+  }, [loadUser, user]);
+
+  useEffect(() => {
+    if (!loadMember && member) {
+      console.log("✅ Member loaded");
+    } else if (!loadMember && !member && user) {
+      console.log("⚠️ User is not a member yet.");
+    }
+  }, [loadMember, member, user]);
 
   // Notification Auto-close
   useEffect(() => {

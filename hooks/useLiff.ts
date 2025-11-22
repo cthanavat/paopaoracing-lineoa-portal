@@ -8,6 +8,7 @@ export function useLiff() {
     setIsLiffReady,
     setIsLiffLoading,
     isLiffReady,
+    setIsInClient,
   } = useAppStore();
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +19,7 @@ export function useLiff() {
         setUser(JSON.parse(stored));
         setLoadUser(false);
         setIsLiffLoading(false);
-        return;
+        // Do not return here, let LIFF init proceed
       }
 
       try {
@@ -27,10 +28,13 @@ export function useLiff() {
           liffId: process.env.NEXT_PUBLIC_LIFF_ID || "",
         });
         setIsLiffReady(true);
+        setIsInClient(liffModule.default.isInClient());
 
         const storedAgain = localStorage.getItem("line-user");
         if (storedAgain) {
-          setUser(JSON.parse(storedAgain));
+          if (stored !== storedAgain) {
+            setUser(JSON.parse(storedAgain));
+          }
         } else {
           if (!liffModule.default.isLoggedIn()) {
             liffModule.default.login();
@@ -57,7 +61,7 @@ export function useLiff() {
     };
 
     initLiff();
-  }, [setUser, setLoadUser, setIsLiffReady, setIsLiffLoading]);
+  }, [setUser, setLoadUser, setIsLiffReady, setIsLiffLoading, setIsInClient]);
 
   const sendMessage = async (text: string) => {
     if (!isLiffReady) {
