@@ -25,6 +25,7 @@ import {
   HiLogin,
   HiLogout,
   HiCalendar,
+  HiOutlineClock,
   HiClipboardCheck,
 } from "react-icons/hi";
 
@@ -33,76 +34,88 @@ interface AttendanceRecord {
   created_at: string;
   employee_id: string;
   date: string;
-  userId: string;
-  userName: string;
   checkIn: string;
   checkOut: string;
   status: string;
   workHours: string;
+  type?: string;
+  leaveType?: string;
+  leaveReason?: string;
+  leaveDays?: string;
 }
 
 interface LeaveRecord {
-  id: string;
+  leave_id: string;
   created_at: string;
   employee_id: string;
   date: string;
   leave_option: string;
-  days: string;
   reason: string;
-  detail: string;
+  days: string;
   approval: string;
-  dateFrom?: string;
-  dateTo?: string;
-  leaveType?: string;
 }
 
-const LeaveRequestList = ({ leaves }: { leaves: LeaveRecord[] }) => {
+interface AllEmployeeLeave {
+  employeeName: string;
+  leaveType: string;
+  leaveReason: string;
+  leaveDays: string;
+  date: string;
+  approval: string;
+}
+
+const AllEmployeeLeaveSchedule = ({
+  leaves,
+}: {
+  leaves: AllEmployeeLeave[];
+}) => {
   return (
-    <div className="mt-8 border-t pt-6">
-      <h3 className="mb-4 text-lg font-semibold text-gray-900">ประวัติการลา</h3>
-      {leaves.length === 0 ? (
-        <p className="text-center text-gray-500">ไม่พบประวัติการลา</p>
-      ) : (
-        <div className="space-y-3">
-          {leaves.map((leave, index) => (
-            <div
-              key={index}
-              className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm"
-            >
-              <div className="flex items-start justify-between">
+    <div className="mt-0 mb-4">
+      <h3 className="text-md mb-1 max-w-xs text-center font-semibold text-gray-800">
+        ตารางวันหยุด
+      </h3>
+      <div className="space-y-3">
+        {leaves.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 text-center text-gray-500">
+            ไม่มีรายการลาที่อนุมัติแล้วในเร็วๆ นี้
+          </div>
+        ) : (
+          leaves
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            )
+            .map((leave, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-2 shadow-sm"
+              >
                 <div>
                   <p className="font-medium text-gray-900">
-                    {new Date(leave.date).toLocaleDateString("th-TH", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {leave.employeeName}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {leave.leave_option} - {leave.reason}
+                    {leave.leaveType} - {leave.leaveReason}
                   </p>
-                  {leave.detail && (
-                    <p className="mt-1 text-xs text-gray-500">{leave.detail}</p>
-                  )}
                 </div>
-                <span
-                  className={`rounded-full px-2 py-1 text-xs font-medium ${
-                    leave.approval === "TRUE"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}
-                >
-                  {leave.approval === "TRUE" ? "อนุมัติ" : "รออนุมัติ"}
-                </span>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Date(leave.date).toLocaleDateString("th-TH", {
+                      day: "numeric",
+                      month: "short",
+                      year: "2-digit",
+                    })}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {leave.approval === "TRUE" ? "อนุมัติ" : "ไม่อนุมัติ"}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))
+        )}
+      </div>
     </div>
   );
 };
-
 export default function AttendancePage() {
   const {
     user,
@@ -131,6 +144,9 @@ export default function AttendancePage() {
     AttendanceRecord[]
   >([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveRecord[]>([]);
+  const [allEmployeeLeaves, setAllEmployeeLeaves] = useState<
+    AllEmployeeLeave[]
+  >([]);
 
   // Leave form
   const [leaveForm, setLeaveForm] = useState({
@@ -205,9 +221,14 @@ export default function AttendancePage() {
         setLoading(true);
 
         // Load attendance & leave data
-        await loadEmployees();
-        await loadAttendanceData(user.userId);
-        await loadLeaveData(user.userId);
+        const { foundEmployee, employeeMap } = (await loadEmployees()) || {};
+        if (foundEmployee) {
+          await loadAttendanceData(foundEmployee);
+          await loadLeaveData(foundEmployee, employeeMap);
+        } else {
+          // Fallback if loadEmployees returns null (though it shouldn't if member exists)
+          await loadLeaveData();
+        }
 
         dataLoadedRef.current = user.userId;
         console.log("✅ All data loaded successfully");
@@ -240,17 +261,13 @@ export default function AttendancePage() {
       });
       const result = await res.json();
       if (result.data) {
-        // setEmployees(
-        //   result.data.filter(
-        //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        //     (e: any) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
-        //   ),
-        // );
-        // console.log(
-        //   result.data.filter(
-        //     (e) => e.active === "TRUE" && !e.employee_id.startsWith("SYS"),
-        //   ),
-        // );
+        const employeeMap = new Map<string, string>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.data.forEach((e: any) => {
+          if (e.employee_id) {
+            employeeMap.set(e.employee_id, e.nickname || e.name);
+          }
+        });
 
         if (member) {
           const foundEmployee = result.data.filter(
@@ -258,15 +275,18 @@ export default function AttendancePage() {
             (e: any) => e.userId === member.userId,
           )[0];
           setEmployee(foundEmployee || null);
+          console.log("✅ Employee loaded:", foundEmployee?.employee_id);
+          return { foundEmployee, employeeMap }; // Return map as well
         }
       }
+      return null;
     } catch (error) {
       console.error("Failed to load employees:", error);
-    } finally {
-      // setLoadingEmployees(false);
+      return null;
     }
   };
-  const loadAttendanceData = async (userId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadAttendanceData = async (employeeData?: any) => {
     try {
       const today = new Date().toISOString().split("T")[0];
 
@@ -281,30 +301,142 @@ export default function AttendancePage() {
         }),
       });
       const attendanceResult = await attendanceRes.json();
+
+      const currentEmployee = employeeData || employee;
+      console.log("📊 Attendance data from sheet:", attendanceResult.data);
+      console.log(
+        "🔍 Filtering by employee_id:",
+        (currentEmployee as any)?.employee_id,
+      );
+
       if (attendanceResult.data) {
-        const userRecords = attendanceResult.data
+        let userRecords = attendanceResult.data
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .filter((r: any) => r.userId === userId)
+          .filter((r: any) => {
+            const match =
+              r.employee_id === (currentEmployee as any)?.employee_id;
+            console.log(
+              `Record: ${r.employee_id} === ${(currentEmployee as any)?.employee_id}? ${match}`,
+            );
+            return match;
+          })
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((r: any) => ({
             attendance_id: r.attendance_id || "",
             created_at: r.created_at || "",
             employee_id: r.employee_id || "",
             date: r.date || "",
-            userId: r.userId || "",
-            userName: r.userName || "",
             checkIn: r.checkIn || "",
             checkOut: r.checkOut || "",
             status: r.status || "",
             workHours: r.workHours || "",
-          }))
-          .sort(
-            (a: AttendanceRecord, b: AttendanceRecord) =>
-              new Date(b.date).getTime() - new Date(a.date).getTime(),
-          );
+            type: "attendance", // Mark as attendance
+          }));
+
+        // Create a map to merge records by date
+        const recordsMap = new Map<string, AttendanceRecord>();
+
+        // Add attendance records to map
+        userRecords.forEach((record: AttendanceRecord) => {
+          recordsMap.set(record.date, record);
+        });
+
+        // Fetch and merge leave data
+        try {
+          const leaveRes = await fetch("/api/gSheet/get", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sheet: {
+                sheetId: `${config.employee_leaves.sheetId}`,
+                range: `${config.employee_leaves.range}`,
+              },
+            }),
+          });
+          const leaveResult = await leaveRes.json();
+          if (leaveResult.data) {
+            leaveResult.data
+
+              .filter(
+                (r: any) =>
+                  r.employee_id === (currentEmployee as any)?.employee_id,
+              )
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .forEach((r: any) => {
+                const date = r.date || "";
+                const existingRecord = recordsMap.get(date);
+
+                const leaveData = {
+                  attendance_id: existingRecord
+                    ? existingRecord.attendance_id
+                    : `LEAVE-${r.leave_id || date}`,
+                  created_at: existingRecord
+                    ? existingRecord.created_at
+                    : r.created_at || "",
+                  employee_id: existingRecord
+                    ? existingRecord.employee_id
+                    : r.employee_id || "",
+                  date: date,
+                  checkIn: existingRecord ? existingRecord.checkIn : "",
+                  checkOut: existingRecord ? existingRecord.checkOut : "",
+                  status: existingRecord
+                    ? existingRecord.status
+                    : r.approval === "TRUE"
+                      ? "leave_approved"
+                      : "leave_pending",
+                  workHours: existingRecord ? existingRecord.workHours : "",
+                  type: existingRecord ? "mixed" : "leave", // Mark as mixed if both exist
+                  leaveType: r.leave_option || "ลา",
+                  leaveReason: r.reason || "",
+                  leaveDays: r.days || "",
+                  // If mixed, we might want to preserve the leave status specifically?
+                  // For now, let's add a specific leaveStatus field if needed, or just use the existing logic.
+                  // But wait, 'status' field is used for attendance status (checking_in, etc).
+                  // Leave status is derived from approval.
+                  // Let's add leaveStatus to be safe.
+                  leaveStatus:
+                    r.approval === "TRUE" ? "leave_approved" : "leave_pending",
+                  leaveStatusText:
+                    r.approval === "TRUE" ? "อนุมัติ" : "รออนุมัติ",
+                };
+
+                recordsMap.set(date, { ...existingRecord, ...leaveData });
+              });
+          }
+        } catch (err) {
+          console.error("Failed to merge leave data:", err);
+        }
+
+        // Convert map back to array
+        userRecords = Array.from(recordsMap.values());
+
+        // Filter records: Start of last month onwards
+        const now = new Date();
+        const startOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
+
+        userRecords = userRecords.filter((r: AttendanceRecord) => {
+          const recordDate = new Date(r.date);
+          // Reset hours to ensure accurate date comparison
+          recordDate.setHours(0, 0, 0, 0);
+          return recordDate >= startOfLastMonth;
+        });
+
+        userRecords.sort(
+          (a: AttendanceRecord, b: AttendanceRecord) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+
+        console.log("✅ Filtered records (merged):", userRecords);
         setAttendanceHistory(userRecords);
+        console.log("✅ userRecords record:", userRecords);
         setTodayRecord(
-          userRecords.find((r: AttendanceRecord) => r.date === today) || null,
+          userRecords.find(
+            (r: AttendanceRecord) => r.date === today && r.type !== "leave",
+          ) || null,
         );
       }
     } catch (error) {
@@ -317,9 +449,13 @@ export default function AttendancePage() {
     }
   };
 
-  const loadLeaveData = async (userId: string) => {
+  const loadLeaveData = async (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    employeeData?: any,
+    employeeMap?: Map<string, string>,
+  ) => {
     try {
-      const leaveRes = await fetch("/api/gSheet/get", {
+      const res = await fetch("/api/gSheet/get", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -329,29 +465,74 @@ export default function AttendancePage() {
           },
         }),
       });
-      const leaveResult = await leaveRes.json();
-      if (leaveResult.data) {
-        const userLeaves = leaveResult.data
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .filter((r: any) => r.userId === userId)
+      const result = await res.json();
+      if (result.data) {
+        // Process for current user
+        const currentEmployee = employeeData || employee;
+        const userLeaves = result.data
+
+          .filter(
+            (r: any) => r.employee_id === (currentEmployee as any)?.employee_id,
+          )
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((r: any) => ({
-            id: r.leave_id || "", // single-date requests
+            leave_id: r.leave_id || "",
             created_at: r.created_at || "",
             employee_id: r.employee_id || "",
             date: r.date || "",
             leave_option: r.leave_option || "",
-            days: r.days || "",
             reason: r.reason || "",
-            detail: r.detail || "",
-            approval: r.approval || "FALSE",
+            days: r.days || "",
+            approval: r.approval || "",
           }))
+          .filter((r: LeaveRecord) => {
+            const recordDate = new Date(r.date);
+            const now = new Date();
+            const startOfCurrentMonth = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              1,
+            );
+            startOfCurrentMonth.setHours(0, 0, 0, 0);
+            recordDate.setHours(0, 0, 0, 0);
+
+            return recordDate >= startOfCurrentMonth;
+          })
           .sort(
             (a: LeaveRecord, b: LeaveRecord) =>
-              new Date(b.date || b.dateFrom || "").getTime() -
-              new Date(a.date || a.dateFrom || "").getTime(),
+              new Date(b.date).getTime() - new Date(a.date).getTime(),
           );
+
         setLeaveHistory(userLeaves);
+
+        // Process for ALL employees (Future & Approved)
+        if (employeeMap) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const allLeaves = result.data
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .filter((r: any) => {
+              const leaveDate = new Date(r.date);
+              leaveDate.setHours(0, 0, 0, 0);
+              return r.approval === "TRUE" && leaveDate >= today;
+            })
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((r: any) => ({
+              employeeName: employeeMap.get(r.employee_id) || "Unknown",
+              leaveType: r.leave_option || "ลา",
+              leaveReason: r.reason || "",
+              leaveDays: r.days || "",
+              date: r.date || "",
+              approval: r.approval || "",
+            }))
+            .sort(
+              (a: AllEmployeeLeave, b: AllEmployeeLeave) =>
+                new Date(a.date).getTime() - new Date(b.date).getTime(),
+            );
+
+          setAllEmployeeLeaves(allLeaves);
+        }
       }
     } catch (error) {
       console.error("Load leave error:", error);
@@ -364,8 +545,9 @@ export default function AttendancePage() {
   };
 
   const handleCheckIn = async () => {
-    if (!user || !member) return;
+    if (!user || !member || !employee) return;
     console.log("🕒 Check-in requested...");
+    console.log("Employee ID:", (employee as any)?.employee_id);
     setActionLoading(true);
     try {
       const now = new Date();
@@ -381,14 +563,13 @@ export default function AttendancePage() {
           newRow: [
             "",
             "",
-            "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (employee as any)?.employee_id || "", // Key: employee_id
             today,
-            user.userId,
             member.name,
             time,
             "",
             "checked_in",
-            "",
             "",
           ],
         }),
@@ -402,7 +583,7 @@ export default function AttendancePage() {
           message: `เช็คอินสำเร็จ เวลา ${time}`,
           type: "success",
         });
-        await loadAttendanceData(user.userId);
+        await loadAttendanceData();
       } else {
         throw new Error("Check-in failed");
       }
@@ -419,8 +600,9 @@ export default function AttendancePage() {
   };
 
   const handleCheckOut = async () => {
-    if (!user || !todayRecord) return;
+    if (!user || !todayRecord || !employee) return;
     console.log("🕒 Check-out requested...");
+    console.log("Employee ID for checkout:", (employee as any)?.employee_id);
     setActionLoading(true);
     try {
       const now = new Date();
@@ -438,12 +620,12 @@ export default function AttendancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user.userId,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          employeeId: (employee as any)?.employee_id, // ส่ง employee_id แทน userId
           date: todayRecord.date,
           checkOut: time,
           workHours,
-          sheetId: config.attendance.sheetId, // ส่งมา
-          // range ไม่ต้องส่งก็ได้ ถ้าใน API กำหนดตายตัวว่า A:J
+          sheetId: config.attendance.sheetId,
         }),
       });
 
@@ -455,7 +637,7 @@ export default function AttendancePage() {
           message: `เช็คเอาท์สำเร็จ เวลา ${time} (ทำงาน ${workHours} ชั่วโมง)`,
           type: "success",
         });
-        await loadAttendanceData(user.userId);
+        await loadAttendanceData();
       } else {
         throw new Error("Check-out failed");
       }
@@ -488,17 +670,6 @@ export default function AttendancePage() {
         setActionLoading(false);
         return;
       }
-      // const from = new Date(leaveForm.dateFrom);
-      // const to = new Date(leaveForm.dateTo);
-      // if (to < from) {
-      //   setNotification({
-      //     show: true,
-      //     message: "ช่วงวันที่ไม่ถูกต้อง",
-      //     type: "warning",
-      //   });
-      //   setActionLoading(false);
-      //   return;
-      // }
 
       let days = 0;
       if (leaveForm.leave_option === "ครึ่งวัน") {
@@ -518,9 +689,8 @@ export default function AttendancePage() {
           newRow: [
             "",
             new Date().toISOString(),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (employee as any).employee_id,
-            leaveForm.date, // createdAt / request date
+            employee.employee_id, // Key: employee_id
+            leaveForm.date,
             leaveForm.leave_option,
             days,
             leaveForm.reason,
@@ -561,39 +731,6 @@ export default function AttendancePage() {
     }
   };
 
-  // Monthly filter for leave records
-  // const monthLeaves = useMemo(() => {
-  //   const [year, month] = selectedMonth.split("-");
-  //   return leaveHistory.filter((r) => {
-  //     const baseDate = r.date || r.dateFrom || "";
-  //     if (!baseDate) return false;
-  //     const d = new Date(baseDate);
-  //     return (
-  //       d.getFullYear() === Number(year) && d.getMonth() + 1 === Number(month)
-  //     );
-  //   });
-  // }, [leaveHistory, selectedMonth]);
-
-  // const monthLeaveSummary = useMemo(() => {
-  //   // Count by leaveType and days
-  //   const summary = {};
-  //   for (const r of monthLeaves) {
-  //     const type = r.leaveType || "อื่นๆ";
-  //     if (!summary[type]) summary[type] = { count: 0, days: 0 };
-  //     summary[type].count += 1;
-
-  //     // Calculate number of days in the period
-  //     const start = new Date(r.dateFrom || r.date);
-  //     const end = new Date(r.dateTo || r.date);
-  //     const diffDays = Math.max(
-  //       1,
-  //       Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1,
-  //     );
-  //     summary[type].days += diffDays;
-  //   }
-  //   return summary;
-  // }, [monthLeaves]);
-
   if (loading) {
     return (
       <main className="flex h-screen items-center justify-center">
@@ -620,25 +757,32 @@ export default function AttendancePage() {
     <main className="min-h-screen bg-gray-50 p-5 pb-20">
       <div className="mb-4">
         <UserProfile
-          displayName={user.displayName}
           pictureUrl={user.pictureUrl}
-          statusMessage={user.statusMessage}
+          displayName={employee?.nickname || user.displayName}
+          statusMessage={
+            `${employee?.firstname || ""} ${employee?.lastname || ""}`.trim() ||
+            employee?.nickname ||
+            user.statusMessage
+          }
+          bio={`${employee?.role || ""}`}
         />
-        {!useAppStore.getState().isInClient && (
-          <div className="mt-2 flex justify-center">
-            <Button
-              color="light"
-              size="xs"
-              onClick={() => {
-                localStorage.removeItem("line-user");
-                window.location.reload();
-              }}
-            >
-              Logout
-            </Button>
-          </div>
-        )}
+        {!useAppStore.getState().isInClient &&
+          employee.userRole === "admin" && (
+            <div className="mt-2 flex justify-center">
+              <Button
+                color="light"
+                size="xs"
+                onClick={() => {
+                  localStorage.removeItem("line-user");
+                  window.location.reload();
+                }}
+              >
+                Logout
+              </Button>
+            </div>
+          )}
       </div>
+
       {/* Navigation tabs */}
       <Tabs
         aria-label="Tabs with underline"
@@ -678,7 +822,7 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mx-8 mt-4 space-y-3">
               {!todayRecord && (
                 <Button
                   onClick={handleCheckIn}
@@ -717,7 +861,12 @@ export default function AttendancePage() {
                 </div>
               )}
             </div>
-            <div> day off all of employe incoming</div>
+
+            <div className="my-8 border-t border-gray-700"></div>
+
+            <div className="mx-auto max-w-xs min-w-2xs px-4 pt-0">
+              <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
+            </div>
           </div>
         </TabItem>
         <TabItem
@@ -738,40 +887,126 @@ export default function AttendancePage() {
                     <TimelinePoint />
                     <TimelineContent>
                       <TimelineTime>
-                        {new Date(record.date).toLocaleDateString("th-TH", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {`${new Date(record.date).getFullYear()}-${(
+                          "0" +
+                          (new Date(record.date).getMonth() + 1)
+                        ).slice(-2)}-${(
+                          "0" + new Date(record.date).getDate()
+                        ).slice(-2)} (${new Date(
+                          record.date,
+                        ).toLocaleDateString("en-US", {
+                          weekday: "short",
+                        })})`}
                       </TimelineTime>
-                      {record.status !== "completed" && (
-                        <TimelineTitle>
-                          {record.status === "checking_in"
-                            ? "กำลังบันทึก"
-                            : "กำลังทำงาน"}
-                        </TimelineTitle>
-                      )}
-                      <TimelineBody>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <span className="text-gray-500">เข้า:</span>{" "}
-                            <span className="font-medium text-green-600">
-                              {record.checkIn}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">ออก:</span>{" "}
-                            <span className="font-medium text-red-600">
-                              {record.checkOut || "-"}
-                            </span>
-                          </div>
+
+                      {/* Leave Section */}
+                      {record.leaveType && (
+                        <div className="mb-3 border-l-4 border-purple-200 pl-3">
+                          <TimelineTitle>
+                            {(() => {
+                              const recordDate = new Date(record.date);
+                              const currentDate = new Date();
+                              recordDate.setHours(0, 0, 0, 0);
+                              currentDate.setHours(0, 0, 0, 0);
+
+                              const isDatePassed = recordDate < currentDate;
+
+                              if (isDatePassed) {
+                                if (record.leaveStatus === "leave_approved") {
+                                  return (
+                                    <span className="text-gray-900">
+                                      {record.leaveReason}
+                                    </span>
+                                  );
+                                } else {
+                                  return (
+                                    <span className="text-gray-400 line-through">
+                                      ไม่อนุมัติ
+                                    </span>
+                                  );
+                                }
+                              }
+
+                              // Future date or today
+                              const statusColorClass =
+                                record.leaveStatus === "leave_pending"
+                                  ? "text-yellow-500 text-thin"
+                                  : record.leaveStatus === "leave_approved"
+                                    ? "text-green-500"
+                                    : "text-gray-500";
+
+                              return (
+                                <span className={statusColorClass}>
+                                  {record.leaveStatusText}
+                                </span>
+                              );
+                            })()}
+                          </TimelineTitle>
+                          <TimelineBody>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <p>
+                                <span className="font-medium">ประเภท:</span>{" "}
+                                {record.leaveReason}
+                              </p>
+                              <p>
+                                <span className="font-medium">จำนวน:</span>{" "}
+                                {record.leaveDays} วัน
+                              </p>
+                            </div>
+                          </TimelineBody>
                         </div>
-                        {record.workHours && (
-                          <p className="mt-1 text-sm text-gray-600">
-                            {/* ทำงาน: {record.workHours} */}
-                          </p>
-                        )}
-                      </TimelineBody>
+                      )}
+
+                      {/* Attendance Section */}
+                      {record.checkIn && (
+                        <div
+                          className={
+                            record.leaveType
+                              ? "border-l-4 border-green-200 pl-3"
+                              : ""
+                          }
+                        >
+                          <TimelineTitle>
+                            {(() => {
+                              const recordDate = new Date(record.date);
+                              recordDate.setHours(0, 0, 0, 0);
+                              const currentDate = new Date();
+                              currentDate.setHours(0, 0, 0, 0);
+
+                              const isPastDate = recordDate < currentDate;
+
+                              if (isPastDate && record.status !== "completed") {
+                                return "ไม่ลงบันทึกเวลา";
+                              }
+                              if (record.status === "checked_in") {
+                                return (
+                                  <span className="flex items-center gap-1 text-blue-600">
+                                    <HiOutlineClock className="h-4 w-4" />
+                                    กำลังทำงาน
+                                  </span>
+                                );
+                              }
+                              return null; // Or an empty string if no title is desired for completed records
+                            })()}
+                          </TimelineTitle>
+                          <TimelineBody>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-500">เข้า:</span>{" "}
+                                <span className="font-medium text-green-600">
+                                  {record.checkIn}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">ออก:</span>{" "}
+                                <span className="font-medium text-red-600">
+                                  {record.checkOut || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </TimelineBody>
+                        </div>
+                      )}
                     </TimelineContent>
                   </TimelineItem>
                 ))}
@@ -785,19 +1020,19 @@ export default function AttendancePage() {
           icon={HiLogout}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-xs min-w-2xs space-y-6 px-4">
-            {/* <div className="mb-4">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                เลือกเดือน
-              </label>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div> */}
-            <form onSubmit={handleLeaveSubmit} className="space-y-4">
+          <div className="mx-auto max-w-xs min-w-2xs px-4 pt-0">
+            <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
+          </div>
+
+          <div className="mt-6">
+            <form
+              onSubmit={handleLeaveSubmit}
+              className="mt-6 rounded-t-2xl bg-orange-100 px-4 py-4"
+            >
+              {" "}
+              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold text-orange-400">
+                ลงวันหยุด
+              </h3>
               <div className="mb-2">
                 <label className="mb-1 block text-sm text-gray-700">
                   วันที่
@@ -808,7 +1043,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, date: e.target.value })
                   }
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
                   required
                 />
               </div>
@@ -824,14 +1059,13 @@ export default function AttendancePage() {
                       leave_option: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
                 >
                   <option value="ครึ่งวัน">ครึ่งวัน</option>
                   <option value="1 วัน">1 วัน</option>
                   <option value="2 วัน">2 วัน</option>
                 </select>
               </div>
-
               <div className="mb-2">
                 <label className="mb-1 block text-sm text-gray-700">
                   ประเภทการลา
@@ -841,14 +1075,13 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, reason: e.target.value })
                   }
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
                 >
                   <option value="ลาป่วย">วันหยุด</option>
                   <option value="ลาป่วย">ลาป่วย</option>
                   <option value="ลากิจ">ลากิจ</option>
                 </select>
               </div>
-
               <div className="mb-2">
                 <label className="mb-1 block text-sm text-gray-700">
                   เหตุผล
@@ -859,22 +1092,70 @@ export default function AttendancePage() {
                     setLeaveForm({ ...leaveForm, detail: e.target.value })
                   }
                   rows={3}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
                   placeholder="ระบุเหตุผลการลา..."
                 />
               </div>
-
-              <Button
-                type="submit"
-                disabled={actionLoading}
-                className="text-md w-full rounded-full bg-orange-400 py-2 font-medium text-white hover:bg-red-800 hover:opacity-90"
-                size="md"
-              >
-                {actionLoading ? "กำลังส่ง..." : "ส่งคำขอลา"}
-              </Button>
+              <div className="mb-2">
+                <Button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="text-md w-full rounded-full bg-orange-400 py-2 font-medium text-white hover:bg-red-800 hover:opacity-90"
+                  size="md"
+                >
+                  {actionLoading ? "กำลังส่ง..." : "ส่งคำขอ"}
+                </Button>
+              </div>
             </form>
-            {/* Monthly summary */}
-            <LeaveRequestList leaves={leaveHistory} />
+            <div className="rounded-b-2xl bg-orange-200 px-3 pt-6 pb-4">
+              <h3 className="mb-4 text-center text-lg font-semibold text-gray-900">
+                ประวัติการลา
+              </h3>
+              {leaveHistory.length === 0 ? (
+                <p className="text-center text-gray-500">ไม่พบประวัติการลา</p>
+              ) : (
+                <div className="space-y-3">
+                  {leaveHistory.map((leave, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl bg-orange-100 p-4 shadow-lg"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {`${new Date(leave.date).getFullYear()}-${(
+                              "0" +
+                              (new Date(leave.date).getMonth() + 1)
+                            ).slice(-2)}-${(
+                              "0" + new Date(leave.date).getDate()
+                            ).slice(-2)} (${new Date(
+                              leave.date,
+                            ).toLocaleDateString("en-US", {
+                              weekday: "short",
+                            })})`}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {leave.leave_option} - {leave.reason}
+                          </p>
+                          {/* {leave.detail && (
+                    <p className="mt-1 text-xs text-gray-500">{leave.detail}</p>
+                  )} */}
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${
+                            leave.approval === "TRUE"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {leave.approval === "TRUE" ? "อนุมัติ" : "รออนุมัติ"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </TabItem>
       </Tabs>

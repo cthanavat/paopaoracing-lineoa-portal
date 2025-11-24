@@ -8,7 +8,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const {
-      userId,
+      employeeId, // Changed from userId to employeeId
       date,
       checkOut,
       workHours,
@@ -17,7 +17,7 @@ export async function POST(request) {
     } = body;
 
     // ตรวจสอบข้อมูลที่จำเป็น
-    if (!userId || !date || !checkOut || !workHours || !sheetId) {
+    if (!employeeId || !date || !checkOut || !workHours || !sheetId) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 },
@@ -52,10 +52,13 @@ export async function POST(request) {
 
     const dataRows = rows.slice(1); // ข้าม header
 
-    // หาแถวที่ตรงกับ date + userId
+    // หาแถวที่ตรงกับ date + employeeId (C=employee_id, D=date)
     const rowIndex = dataRows.findIndex(
-      (row) => row[3] === date && row[4] === userId, // D=date, E=userId
+      (row) => row[2] === employeeId && row[3] === date, // C=employee_id, D=date
     );
+
+    console.log("Looking for:", { employeeId, date });
+    console.log("Found row index:", rowIndex);
 
     if (rowIndex === -1) {
       return NextResponse.json(
@@ -66,9 +69,9 @@ export async function POST(request) {
 
     // สร้างแถวใหม่ที่จะอัปเดต (H, I, J)
     const updatedRow = [...dataRows[rowIndex]];
-    updatedRow[7] = checkOut; // H → checkOut
-    updatedRow[8] = "completed"; // I → status
-    updatedRow[9] = workHours; // J → workHours
+    updatedRow[6] = checkOut; // H → checkOut
+    updatedRow[7] = "completed"; // I → status
+    updatedRow[8] = workHours; // J → workHours
 
     // อัปเดตแถวนั้นใน Google Sheet
     const sheetRowNumber = rowIndex + 2; // +2 เพราะมี header และเริ่มนับจากแถว 2
