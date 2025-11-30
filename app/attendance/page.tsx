@@ -42,6 +42,8 @@ interface AttendanceRecord {
   leaveType?: string;
   leaveReason?: string;
   leaveDays?: string;
+  leaveStatus?: string;
+  leaveStatusText?: string;
 }
 
 interface RawSheetRecord {
@@ -777,7 +779,7 @@ export default function AttendancePage() {
           bio={`${employee?.role || ""}`}
         />
         {!useAppStore.getState().isInClient &&
-          employee.userRole === "admin" && (
+          employee?.userRole === "admin" && (
             <div className="mt-2 flex justify-center">
               <Button
                 color="light"
