@@ -44,6 +44,16 @@ interface AttendanceRecord {
   leaveDays?: string;
 }
 
+interface RawSheetRecord {
+  [key: string]: string;
+  employee_id: string;
+}
+
+interface Employee {
+  employee_id: string;
+  [key: string]: string;
+}
+
 interface LeaveRecord {
   leave_id: string;
   created_at: string;
@@ -302,26 +312,22 @@ export default function AttendancePage() {
       });
       const attendanceResult = await attendanceRes.json();
 
-      const currentEmployee = employeeData || employee;
+      const currentEmployee = (employeeData || employee) as
+        | Employee
+        | undefined;
       console.log("📊 Attendance data from sheet:", attendanceResult.data);
-      console.log(
-        "🔍 Filtering by employee_id:",
-        (currentEmployee as any)?.employee_id,
-      );
+      console.log("🔍 Filtering by employee_id:", currentEmployee?.employee_id);
 
       if (attendanceResult.data) {
-        let userRecords = attendanceResult.data
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .filter((r: any) => {
-            const match =
-              r.employee_id === (currentEmployee as any)?.employee_id;
+        let userRecords = (attendanceResult.data as RawSheetRecord[])
+          .filter((r: RawSheetRecord) => {
+            const match = r.employee_id === currentEmployee?.employee_id;
             console.log(
-              `Record: ${r.employee_id} === ${(currentEmployee as any)?.employee_id}? ${match}`,
+              `Record: ${r.employee_id} === ${currentEmployee?.employee_id}? ${match}`,
             );
             return match;
           })
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((r: any) => ({
+          .map((r: RawSheetRecord) => ({
             attendance_id: r.attendance_id || "",
             created_at: r.created_at || "",
             employee_id: r.employee_id || "",
@@ -355,14 +361,13 @@ export default function AttendancePage() {
           });
           const leaveResult = await leaveRes.json();
           if (leaveResult.data) {
-            leaveResult.data
+            (leaveResult.data as RawSheetRecord[])
 
               .filter(
-                (r: any) =>
-                  r.employee_id === (currentEmployee as any)?.employee_id,
+                (r: RawSheetRecord) =>
+                  r.employee_id === currentEmployee?.employee_id,
               )
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .forEach((r: any) => {
+              .forEach((r: RawSheetRecord) => {
                 const date = r.date || "";
                 const existingRecord = recordsMap.get(date);
 
@@ -468,14 +473,16 @@ export default function AttendancePage() {
       const result = await res.json();
       if (result.data) {
         // Process for current user
-        const currentEmployee = employeeData || employee;
-        const userLeaves = result.data
+        const currentEmployee = (employeeData || employee) as
+          | Employee
+          | undefined;
+        const userLeaves = (result.data as RawSheetRecord[])
 
           .filter(
-            (r: any) => r.employee_id === (currentEmployee as any)?.employee_id,
+            (r: RawSheetRecord) =>
+              r.employee_id === currentEmployee?.employee_id,
           )
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((r: any) => ({
+          .map((r: RawSheetRecord) => ({
             leave_id: r.leave_id || "",
             created_at: r.created_at || "",
             employee_id: r.employee_id || "",
@@ -547,7 +554,7 @@ export default function AttendancePage() {
   const handleCheckIn = async () => {
     if (!user || !member || !employee) return;
     console.log("🕒 Check-in requested...");
-    console.log("Employee ID:", (employee as any)?.employee_id);
+    console.log("Employee ID:", (employee as Employee)?.employee_id);
     setActionLoading(true);
     try {
       const now = new Date();
@@ -602,7 +609,10 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     if (!user || !todayRecord || !employee) return;
     console.log("🕒 Check-out requested...");
-    console.log("Employee ID for checkout:", (employee as any)?.employee_id);
+    console.log(
+      "Employee ID for checkout:",
+      (employee as Employee)?.employee_id,
+    );
     setActionLoading(true);
     try {
       const now = new Date();
@@ -689,7 +699,7 @@ export default function AttendancePage() {
           newRow: [
             "",
             new Date().toISOString(),
-            employee.employee_id, // Key: employee_id
+            employee?.employee_id || "", // Key: employee_id
             leaveForm.date,
             leaveForm.leave_option,
             days,

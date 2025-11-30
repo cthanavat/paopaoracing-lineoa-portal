@@ -23,6 +23,17 @@ export interface Member {
   [key: string]: any;
 }
 
+export interface Employee {
+  employee_id: string;
+  nickname?: string;
+  firstname?: string;
+  lastname?: string;
+  role?: string;
+  userRole?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
 export interface HistoryItem {
   bill_date: string;
   car_plate_number: string;
@@ -39,8 +50,7 @@ interface AppState {
   member: Member | null;
   memberAll: Member[];
   historyList: HistoryItem[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  employee: any[];
+  employee: Employee | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   employees: any[];
   loadUser: boolean;
@@ -59,8 +69,7 @@ interface AppState {
   setMember: (member: Member | null) => void;
   setMemberAll: (memberAll: Member[]) => void;
   setHistoryList: (historyList: HistoryItem[]) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setEmployee: (employee: any[]) => void;
+  setEmployee: (employee: Employee | null) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setEmployees: (employees: any[]) => void;
   setLoadUser: (loadUser: boolean) => void;
@@ -78,7 +87,7 @@ export const useAppStore = create<AppState>((set) => ({
   member: null,
   memberAll: [],
   historyList: [],
-  employee: [],
+  employee: null,
   employees: [],
   loadUser: true,
   loadMember: true,
