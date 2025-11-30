@@ -14,7 +14,14 @@ export function useLiff() {
 
   useEffect(() => {
     const initLiff = async () => {
-      const stored = localStorage.getItem("line-user");
+      // CRITICAL: Check if we're in the browser before accessing localStorage
+      // This prevents "localStorage.getItem is not a function" errors during SSR
+      if (typeof window === "undefined") {
+        console.log("⏸️ Skipping LIFF init - not in browser");
+        return;
+      }
+
+      const stored = window.localStorage.getItem("line-user");
       if (stored) {
         setUser(JSON.parse(stored));
         setLoadUser(false);
@@ -30,7 +37,7 @@ export function useLiff() {
         setIsLiffReady(true);
         setIsInClient(liffModule.default.isInClient());
 
-        const storedAgain = localStorage.getItem("line-user");
+        const storedAgain = window.localStorage.getItem("line-user");
         if (storedAgain) {
           if (stored !== storedAgain) {
             setUser(JSON.parse(storedAgain));
@@ -47,7 +54,7 @@ export function useLiff() {
             pictureUrl: profile.pictureUrl,
             statusMessage: profile.statusMessage,
           };
-          localStorage.setItem("line-user", JSON.stringify(userData));
+          window.localStorage.setItem("line-user", JSON.stringify(userData));
           setUser(userData);
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

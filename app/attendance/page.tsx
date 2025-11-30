@@ -773,8 +773,10 @@ export default function AttendancePage() {
                 color="light"
                 size="xs"
                 onClick={() => {
-                  localStorage.removeItem("line-user");
-                  window.location.reload();
+                  if (typeof window !== "undefined") {
+                    window.localStorage.removeItem("line-user");
+                    window.location.reload();
+                  }
                 }}
               >
                 Logout

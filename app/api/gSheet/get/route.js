@@ -1,5 +1,6 @@
 // app/api/gSheet/get/route.js
 import { google } from "googleapis";
+import { GoogleAuth } from "google-auth-library";
 import { NextResponse } from "next/server";
 import { Buffer } from "buffer";
 
@@ -19,7 +20,7 @@ export async function POST(request) {
       Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, "base64").toString(),
     );
 
-    const auth = new google.auth.GoogleAuth({
+    const auth = new GoogleAuth({
       credentials,
       scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     });
