@@ -88,18 +88,20 @@ export async function POST(request) {
 
     // Send Pushover Notification
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushover`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: `Check-out: ${nickname || "Employee"} at ${checkOut} (Work Hours: ${workHours})`,
-            title: "Employee Check-out",
-            token: process.env.PUSHOVER_TOKEN_ADMIN,
-          }),
-        },
-      );
+      // Get base URL from request headers (works in production)
+      const protocol = request.headers.get("x-forwarded-proto") || "http";
+      const host = request.headers.get("host") || "localhost:3000";
+      const baseUrl = `${protocol}://${host}`;
+
+      await fetch(`${baseUrl}/api/pushover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Check-out: ${nickname || "Employee"} at ${checkOut} (Work Hours: ${workHours})`,
+          title: "Employee Check-out",
+          token: process.env.PUSHOVER_TOKEN_ADMIN,
+        }),
+      });
     } catch (e) {
       console.error("Failed to send notification:", e);
     }

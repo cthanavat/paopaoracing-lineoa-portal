@@ -40,22 +40,24 @@ export async function POST(request) {
 
     // Send Pushover Notification
     try {
+      // Get base URL from request headers (works in production)
+      const protocol = request.headers.get("x-forwarded-proto") || "http";
+      const host = request.headers.get("host") || "localhost:3000";
+      const baseUrl = `${protocol}://${host}`;
+
       // Check if it's a Check-in (newRow has 9 elements, index 7 is "checked_in")
       // newRow: ["", "", employee_id, date, name, time, "", "checked_in", ""]
       if (newRow[7] === "checked_in") {
         const time = newRow[5];
-        await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushover`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: `Check-in: ${nickname || newRow[4]} at ${time}`,
-              title: "Employee Check-in",
-              token: process.env.PUSHOVER_TOKEN_ADMIN,
-            }),
-          },
-        );
+        await fetch(`${baseUrl}/api/pushover`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Check-in: ${nickname || newRow[4]} at ${time}`,
+            title: "Employee Check-in",
+            token: process.env.PUSHOVER_TOKEN_ADMIN,
+          }),
+        });
       }
       // Check if it's a Leave Request (newRow has 9 elements, index 8 is "Pending" (status))
       // newRow: ["", created_at, employee_id, date, leave_option, days, reason, detail, "Pending"]
@@ -64,18 +66,15 @@ export async function POST(request) {
         const days = newRow[5];
         const reason = newRow[6];
         const date = newRow[3];
-        await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushover`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: `Leave Request: ${nickname || "Employee"} - ${leaveOption} (${days} days)\nDate: ${date}\nReason: ${reason}`,
-              title: "Leave Request",
-              token: process.env.PUSHOVER_TOKEN_ADMIN,
-            }),
-          },
-        );
+        await fetch(`${baseUrl}/api/pushover`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Leave Request: ${nickname || "Employee"} - ${leaveOption} (${days} days)\nDate: ${date}\nReason: ${reason}`,
+            title: "Leave Request",
+            token: process.env.PUSHOVER_TOKEN_ADMIN,
+          }),
+        });
       }
     } catch (e) {
       console.error("Failed to send notification:", e);
