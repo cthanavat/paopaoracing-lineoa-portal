@@ -38,7 +38,7 @@ interface AttendanceRecord {
   checkOut: string;
   status: string;
   workHours: string;
-  type?: string;
+  type: string;
   leaveType?: string;
   leaveReason?: string;
   leaveDays?: string;
@@ -64,7 +64,7 @@ interface LeaveRecord {
   leave_option: string;
   reason: string;
   days: string;
-  approval: string;
+  status: string;
 }
 
 interface AllEmployeeLeave {
@@ -73,7 +73,7 @@ interface AllEmployeeLeave {
   leaveReason: string;
   leaveDays: string;
   date: string;
-  approval: string;
+  status: string;
 }
 
 const AllEmployeeLeaveSchedule = ({
@@ -118,7 +118,11 @@ const AllEmployeeLeaveSchedule = ({
                     })}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {leave.approval === "TRUE" ? "อนุมัติ" : "ไม่อนุมัติ"}
+                    {leave.status === "Approved"
+                      ? "อนุมัติ"
+                      : leave.status === "Pending"
+                        ? "รออนุมัติ"
+                        : leave.status}
                   </p>
                 </div>
               </div>
@@ -373,6 +377,34 @@ export default function AttendancePage() {
                 const date = r.date || "";
                 const existingRecord = recordsMap.get(date);
 
+                const getLeaveStatusInfo = (rawStatus: string) => {
+                  switch (rawStatus) {
+                    case "Approved":
+                      return {
+                        statusKey: "leave_approved",
+                        statusText: "อนุมัติ",
+                      };
+                    case "Rejected":
+                      return {
+                        statusKey: "leave_rejected",
+                        statusText: "ไม่อนุมัติ",
+                      };
+                    case "Cancelled":
+                      return {
+                        statusKey: "leave_cancelled",
+                        statusText: "ยกเลิกแล้ว",
+                      };
+                    case "Pending":
+                    default: // Default to pending for any unknown status
+                      return {
+                        statusKey: "leave_pending",
+                        statusText: "รออนุมัติ",
+                      };
+                  }
+                };
+
+                const leaveStatusDetails = getLeaveStatusInfo(r.status || "");
+
                 const leaveData = {
                   attendance_id: existingRecord
                     ? existingRecord.attendance_id
@@ -388,23 +420,14 @@ export default function AttendancePage() {
                   checkOut: existingRecord ? existingRecord.checkOut : "",
                   status: existingRecord
                     ? existingRecord.status
-                    : r.approval === "TRUE"
-                      ? "leave_approved"
-                      : "leave_pending",
+                    : leaveStatusDetails.statusKey,
                   workHours: existingRecord ? existingRecord.workHours : "",
-                  type: existingRecord ? "mixed" : "leave", // Mark as mixed if both exist
+                  type: existingRecord ? "mixed" : "leave",
                   leaveType: r.leave_option || "ลา",
                   leaveReason: r.reason || "",
                   leaveDays: r.days || "",
-                  // If mixed, we might want to preserve the leave status specifically?
-                  // For now, let's add a specific leaveStatus field if needed, or just use the existing logic.
-                  // But wait, 'status' field is used for attendance status (checking_in, etc).
-                  // Leave status is derived from approval.
-                  // Let's add leaveStatus to be safe.
-                  leaveStatus:
-                    r.approval === "TRUE" ? "leave_approved" : "leave_pending",
-                  leaveStatusText:
-                    r.approval === "TRUE" ? "อนุมัติ" : "รออนุมัติ",
+                  leaveStatus: leaveStatusDetails.statusKey,
+                  leaveStatusText: leaveStatusDetails.statusText,
                 };
 
                 recordsMap.set(date, { ...existingRecord, ...leaveData });
@@ -492,7 +515,9 @@ export default function AttendancePage() {
             leave_option: r.leave_option || "",
             reason: r.reason || "",
             days: r.days || "",
-            approval: r.approval || "",
+            reason: r.reason || "",
+            days: r.days || "",
+            status: r.status || "Pending",
           }))
           .filter((r: LeaveRecord) => {
             const recordDate = new Date(r.date);
@@ -524,7 +549,7 @@ export default function AttendancePage() {
             .filter((r: any) => {
               const leaveDate = new Date(r.date);
               leaveDate.setHours(0, 0, 0, 0);
-              return r.approval === "TRUE" && leaveDate >= today;
+              return r.status === "Approved" && leaveDate >= today;
             })
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((r: any) => ({
@@ -533,7 +558,7 @@ export default function AttendancePage() {
               leaveReason: r.reason || "",
               leaveDays: r.days || "",
               date: r.date || "",
-              approval: r.approval || "",
+              status: r.status || "Pending",
             }))
             .sort(
               (a: AllEmployeeLeave, b: AllEmployeeLeave) =>
@@ -570,10 +595,9 @@ export default function AttendancePage() {
           sheetId: `${config.attendance.sheetId}`,
           range: `${config.attendance.range}`,
           newRow: [
-            "",
-            "",
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (employee as any)?.employee_id || "", // Key: employee_id
+            new Date().toISOString(),
+            new Date().toISOString(),
+            employee?.employee_id || "", // Key: employee_id
             today,
             member.name,
             time,
@@ -581,6 +605,7 @@ export default function AttendancePage() {
             "checked_in",
             "",
           ],
+          nickname: employee?.nickname || member.displayName, // Pass nickname
         }),
       });
 
@@ -609,7 +634,7 @@ export default function AttendancePage() {
   };
 
   const handleCheckOut = async () => {
-    if (!user || !todayRecord || !employee) return;
+    if (!user || !todayRecord || !employee || !member) return;
     console.log("🕒 Check-out requested...");
     console.log(
       "Employee ID for checkout:",
@@ -632,12 +657,12 @@ export default function AttendancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          employeeId: (employee as any)?.employee_id, // ส่ง employee_id แทน userId
+          employeeId: employee?.employee_id, // ส่ง employee_id แทน userId
           date: todayRecord.date,
           checkOut: time,
           workHours,
           sheetId: config.attendance.sheetId,
+          nickname: employee?.nickname || member.displayName, // Pass nickname
         }),
       });
 
@@ -683,6 +708,35 @@ export default function AttendancePage() {
         return;
       }
 
+      // Validate duplicate holiday requests
+      if (leaveForm.reason === "วันหยุด") {
+        const selectedDate = leaveForm.date;
+        console.log("🔍 Checking for duplicate holiday on:", selectedDate);
+        console.log("📋 All employee leaves:", allEmployeeLeaves);
+
+        const hasExistingHoliday = allEmployeeLeaves.some((leave) => {
+          const match =
+            leave.date === selectedDate &&
+            leave.leaveReason === "วันหยุด" &&
+            leave.status === "Approved";
+          if (match) {
+            console.log("❌ Found duplicate holiday:", leave);
+          }
+          return match;
+        });
+
+        if (hasExistingHoliday) {
+          setNotification({
+            show: true,
+            message: "วันที่เลือกมีคนขอวันหยุดไปแล้ว กรุณาเลือกวันอื่น",
+            type: "warning",
+          });
+          setActionLoading(false);
+          return;
+        }
+        console.log("✅ No duplicate holiday found, proceeding...");
+      }
+
       let days = 0;
       if (leaveForm.leave_option === "ครึ่งวัน") {
         days = 0.5;
@@ -699,7 +753,7 @@ export default function AttendancePage() {
           sheetId: `${config.employee_leaves.sheetId}`,
           range: `${config.employee_leaves.range}`,
           newRow: [
-            "",
+            new Date().toISOString(),
             new Date().toISOString(),
             employee?.employee_id || "", // Key: employee_id
             leaveForm.date,
@@ -707,8 +761,9 @@ export default function AttendancePage() {
             days,
             leaveForm.reason,
             leaveForm.detail,
-            "FALSE",
+            "Pending",
           ],
+          nickname: employee?.nickname || member.displayName, // Pass nickname
         }),
       });
 
@@ -726,7 +781,13 @@ export default function AttendancePage() {
           date: "",
           detail: "",
         });
-        await loadLeaveData(user.userId);
+        // Reload employee data to get fresh employeeMap for all employee leaves
+        const { foundEmployee, employeeMap } = (await loadEmployees()) || {};
+        if (foundEmployee) {
+          await loadLeaveData(foundEmployee, employeeMap);
+        } else {
+          await loadLeaveData();
+        }
         // setActiveTab("leave");
       } else {
         throw new Error("Leave request failed");
@@ -915,7 +976,7 @@ export default function AttendancePage() {
 
                       {/* Leave Section */}
                       {record.leaveType && (
-                        <div className="mb-3 border-l-4 border-purple-200 pl-3">
+                        <div className="mb-3 border-l-4 border-orange-200 pl-3">
                           <TimelineTitle>
                             {(() => {
                               const recordDate = new Date(record.date);
@@ -934,7 +995,7 @@ export default function AttendancePage() {
                                   );
                                 } else {
                                   return (
-                                    <span className="text-gray-400 line-through">
+                                    <span className="text-orange-300 line-through">
                                       ไม่อนุมัติ
                                     </span>
                                   );
@@ -947,7 +1008,7 @@ export default function AttendancePage() {
                                   ? "text-yellow-500 text-thin"
                                   : record.leaveStatus === "leave_approved"
                                     ? "text-green-500"
-                                    : "text-gray-500";
+                                    : "text-orange-500";
 
                               return (
                                 <span className={statusColorClass}>
@@ -1041,10 +1102,10 @@ export default function AttendancePage() {
           <div className="mt-6">
             <form
               onSubmit={handleLeaveSubmit}
-              className="mt-6 rounded-t-2xl bg-orange-100 px-4 py-4"
+              className="mt-6 rounded-t-2xl bg-blue-100 px-4 py-4"
             >
               {" "}
-              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold text-orange-400">
+              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold text-blue-400">
                 ลงวันหยุด
               </h3>
               <div className="mb-2">
@@ -1091,9 +1152,10 @@ export default function AttendancePage() {
                   }
                   className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
                 >
-                  <option value="ลาป่วย">วันหยุด</option>
+                  <option value="วันหยุด">วันหยุด</option>
                   <option value="ลาป่วย">ลาป่วย</option>
                   <option value="ลากิจ">ลากิจ</option>
+                  <option value="อบรม">อบรม</option>
                 </select>
               </div>
               <div className="mb-2">
@@ -1121,9 +1183,9 @@ export default function AttendancePage() {
                 </Button>
               </div>
             </form>
-            <div className="rounded-b-2xl bg-orange-200 px-3 pt-6 pb-4">
+            <div className="rounded-b-2xl bg-blue-200 px-3 pt-6 pb-4">
               <h3 className="mb-4 text-center text-lg font-semibold text-gray-900">
-                ประวัติการลา
+                คำขอทั้งหมด
               </h3>
               {leaveHistory.length === 0 ? (
                 <p className="text-center text-gray-500">ไม่พบประวัติการลา</p>
@@ -1132,7 +1194,7 @@ export default function AttendancePage() {
                   {leaveHistory.map((leave, index) => (
                     <div
                       key={index}
-                      className="rounded-xl bg-orange-100 p-4 shadow-lg"
+                      className="rounded-xl bg-blue-100 p-4 shadow-lg"
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -1157,12 +1219,23 @@ export default function AttendancePage() {
                         </div>
                         <span
                           className={`rounded-full px-2 py-1 text-xs font-medium ${
-                            leave.approval === "TRUE"
+                            // Leave status is directly from the status column.
+                            leave.status === "Approved"
                               ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
+                              : leave.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : leave.status === "Cancelled"
+                                  ? "bg-gray-100 text-gray-800"
+                                  : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
-                          {leave.approval === "TRUE" ? "อนุมัติ" : "รออนุมัติ"}
+                          {leave.status === "Approved"
+                            ? "อนุมัติ"
+                            : leave.status === "Rejected"
+                              ? "ไม่อนุมัติ"
+                              : leave.status === "Cancelled"
+                                ? "ยกเลิก"
+                                : "รออนุมัติ"}
                         </span>
                       </div>
                     </div>

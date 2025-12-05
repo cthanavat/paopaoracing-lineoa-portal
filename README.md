@@ -100,7 +100,7 @@ store/
 
 ### Employee Leaves Sheet
 
-- `leave_id`, `employee_id`, `date`, `leave_option`, `reason`, `days`, `approval`
+- `leave_id`, `employee_id`, `date`, `leave_option`, `reason`, `days`, `status` (Pending, Approved, Rejected, Cancelled)
 
 ## 🔐 Security
 

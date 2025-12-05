@@ -14,6 +14,7 @@ export async function POST(request) {
       workHours,
       sheetId,
       range = "attendance!A:J",
+      nickname, // Get nickname from body
     } = body;
 
     // ตรวจสอบข้อมูลที่จำเป็น
@@ -84,6 +85,24 @@ export async function POST(request) {
         values: [updatedRow],
       },
     });
+
+    // Send Pushover Notification
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushover`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `Check-out: ${nickname || "Employee"} at ${checkOut} (Work Hours: ${workHours})`,
+            title: "Employee Check-out",
+            token: process.env.PUSHOVER_TOKEN_ADMIN,
+          }),
+        },
+      );
+    } catch (e) {
+      console.error("Failed to send notification:", e);
+    }
 
     return NextResponse.json({ success: true, message: "เช็คเอาท์สำเร็จ" });
   } catch (error) {
