@@ -4,18 +4,8 @@ import React, { useState } from "react";
 import { Button } from "flowbite-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useRouter } from "next/navigation";
-
-interface NotificationState {
-  show: boolean;
-  message: string;
-  type: string;
-}
-
-interface ModalState {
-  show: boolean;
-  message: string;
-  type: string;
-}
+import { NotificationState, ModalState } from "@/types/ui";
+import { validatePhone } from "@/lib/utils/validation";
 
 interface SignupFormProps {
   setNotification: React.Dispatch<React.SetStateAction<NotificationState>>;
@@ -48,10 +38,11 @@ const SignupForm: React.FC<SignupFormProps> = ({
     }
 
     const phone = form.phone;
-    if (!phone || phone.length !== 10 || !phone.startsWith("0")) {
+    if (!validatePhone(phone)) {
       setModal({
         show: true,
-        message: "กรอกเบอร์โทรศัพท์ไม่ถูกต้อง",
+        message:
+          "กรอกเบอร์โทรศัพท์ไม่ถูกต้อง (ต้องเป็น 10 หลักและขึ้นต้นด้วย 0)",
         type: "warning",
       });
       setSignup(false);

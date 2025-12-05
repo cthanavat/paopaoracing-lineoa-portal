@@ -5,12 +5,7 @@ import { TabItem, Tabs } from "flowbite-react";
 import { HiClock, HiClipboardList, HiUserCircle } from "react-icons/hi";
 import { useAppStore } from "@/store/useAppStore";
 import HistoryView from "./HistoryView";
-
-interface NotificationState {
-  show: boolean;
-  message: string;
-  type: string;
-}
+import { NotificationState } from "@/types/ui";
 
 interface MemberViewProps {
   sendMessage: (msg: string) => Promise<void>;

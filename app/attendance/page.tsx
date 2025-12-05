@@ -7,6 +7,7 @@ import { useAppStore } from "../../store/useAppStore";
 import UserProfile from "../components/UserProfile";
 import Loader from "../components/Loader";
 import Notification from "../components/Notification";
+import AllEmployeeLeaveSchedule from "./components/AllEmployeeLeaveSchedule";
 import {
   Button,
   Card,
@@ -28,110 +29,14 @@ import {
   HiOutlineClock,
   HiClipboardCheck,
 } from "react-icons/hi";
+import type {
+  AttendanceRecord,
+  AllEmployeeLeave,
+  RawSheetRecord,
+  Employee,
+  LeaveRecord,
+} from "./types/attendance";
 
-interface AttendanceRecord {
-  attendance_id: string;
-  created_at: string;
-  employee_id: string;
-  date: string;
-  checkIn: string;
-  checkOut: string;
-  status: string;
-  workHours: string;
-  type: string;
-  leaveType?: string;
-  leaveReason?: string;
-  leaveDays?: string;
-  leaveStatus?: string;
-  leaveStatusText?: string;
-}
-
-interface RawSheetRecord {
-  [key: string]: string;
-  employee_id: string;
-}
-
-interface Employee {
-  employee_id: string;
-  [key: string]: string;
-}
-
-interface LeaveRecord {
-  leave_id: string;
-  created_at: string;
-  employee_id: string;
-  date: string;
-  leave_option: string;
-  reason: string;
-  days: string;
-  status: string;
-}
-
-interface AllEmployeeLeave {
-  employeeName: string;
-  leaveType: string;
-  leaveReason: string;
-  leaveDays: string;
-  date: string;
-  status: string;
-}
-
-const AllEmployeeLeaveSchedule = ({
-  leaves,
-}: {
-  leaves: AllEmployeeLeave[];
-}) => {
-  return (
-    <div className="mt-0 mb-4">
-      <h3 className="text-md mb-1 max-w-xs text-center font-semibold text-gray-800">
-        ตารางวันหยุด
-      </h3>
-      <div className="space-y-3">
-        {leaves.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 text-center text-gray-500">
-            ไม่มีรายการลาที่อนุมัติแล้วในเร็วๆ นี้
-          </div>
-        ) : (
-          leaves
-            .sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-            )
-            .map((leave, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-2 shadow-sm"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {leave.employeeName}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {leave.leaveType} - {leave.leaveReason}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
-                    {new Date(leave.date).toLocaleDateString("th-TH", {
-                      day: "numeric",
-                      month: "short",
-                      year: "2-digit",
-                    })}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {leave.status === "Approved"
-                      ? "อนุมัติ"
-                      : leave.status === "Pending"
-                        ? "รออนุมัติ"
-                        : leave.status}
-                  </p>
-                </div>
-              </div>
-            ))
-        )}
-      </div>
-    </div>
-  );
-};
 export default function AttendancePage() {
   const {
     user,
@@ -183,15 +88,17 @@ export default function AttendancePage() {
   }, [notification.show]);
 
   const dataLoadedRef = useRef<string | null>(null);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
     const bootstrap = async () => {
-      // console.log("🔄 Bootstrap called", {
-      //   isLiffReady,
-      //   user: user?.userId,
-      //   member: member?.userId,
-      //   loadMember,
-      // });
+      console.log("🔄 Bootstrap called");
+
+      // Prevent multiple simultaneous bootstraps
+      if (hasInitializedRef.current) {
+        console.log("⏭️ Bootstrap already running, skipping");
+        return;
+      }
 
       if (!isLiffReady) {
         console.log("⏸️ LIFF not ready yet");
@@ -214,7 +121,6 @@ export default function AttendancePage() {
       // 2. If user exists, check if member is still loading
       if (loadMember) {
         console.log("⏸️ Member is still loading...");
-        setLoading(true);
         return;
       }
 
@@ -233,6 +139,7 @@ export default function AttendancePage() {
       }
 
       try {
+        hasInitializedRef.current = true;
         console.log("🚀 Starting data fetch for user");
         setLoading(true);
 
@@ -257,13 +164,15 @@ export default function AttendancePage() {
         });
       } finally {
         setLoading(false);
+        hasInitializedRef.current = false;
       }
     };
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, member, config, isLiffReady, loadMember]);
+  }, [user, member, config, isLiffReady]);
 
   const loadEmployees = async () => {
+    // console.log("📋 [loadEmployees] Called");
     try {
       const res = await fetch("/api/gSheet/get", {
         method: "POST",
@@ -291,7 +200,7 @@ export default function AttendancePage() {
             (e: any) => e.userId === member.userId,
           )[0];
           setEmployee(foundEmployee || null);
-          console.log("✅ Employee loaded:", foundEmployee?.employee_id);
+          console.log("✅ Employee loaded:");
           return { foundEmployee, employeeMap }; // Return map as well
         }
       }
@@ -301,8 +210,9 @@ export default function AttendancePage() {
       return null;
     }
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadAttendanceData = async (employeeData?: any) => {
+
+  const loadAttendanceData = async (employeeData: Employee) => {
+    // console.log("📅 [loadAttendanceData] Called");
     try {
       const today = new Date().toISOString().split("T")[0];
 
@@ -321,8 +231,8 @@ export default function AttendancePage() {
       const currentEmployee = (employeeData || employee) as
         | Employee
         | undefined;
-      console.log("📊 Attendance data from sheet:", attendanceResult.data);
-      console.log("🔍 Filtering by employee_id:", currentEmployee?.employee_id);
+      console.log("📊 Attendance data loaded:");
+      // console.log("🔍 Filtering by employee:");
 
       if (attendanceResult.data) {
         let userRecords = (attendanceResult.data as RawSheetRecord[])
@@ -457,9 +367,8 @@ export default function AttendancePage() {
             new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
 
-        console.log("✅ Filtered records (merged):", userRecords);
+        console.log("✅ Filtered records ");
         setAttendanceHistory(userRecords);
-        console.log("✅ userRecords record:", userRecords);
         setTodayRecord(
           userRecords.find(
             (r: AttendanceRecord) => r.date === today && r.type !== "leave",
@@ -481,6 +390,7 @@ export default function AttendancePage() {
     employeeData?: any,
     employeeMap?: Map<string, string>,
   ) => {
+    // console.log("🏖️ [loadLeaveData] Called");
     try {
       const res = await fetch("/api/gSheet/get", {
         method: "POST",
@@ -708,17 +618,13 @@ export default function AttendancePage() {
       // Validate duplicate holiday requests
       if (leaveForm.reason === "วันหยุด") {
         const selectedDate = leaveForm.date;
-        console.log("🔍 Checking for duplicate holiday on:", selectedDate);
-        console.log("📋 All employee leaves:", allEmployeeLeaves);
 
         const hasExistingHoliday = allEmployeeLeaves.some((leave) => {
           const match =
             leave.date === selectedDate &&
             leave.leaveReason === "วันหยุด" &&
             leave.status === "Approved";
-          if (match) {
-            console.log("❌ Found duplicate holiday:", leave);
-          }
+
           return match;
         });
 
@@ -731,7 +637,6 @@ export default function AttendancePage() {
           setActionLoading(false);
           return;
         }
-        console.log("✅ No duplicate holiday found, proceeding...");
       }
 
       let days = 0;
