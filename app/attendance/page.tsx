@@ -328,9 +328,6 @@ export default function AttendancePage() {
         let userRecords = (attendanceResult.data as RawSheetRecord[])
           .filter((r: RawSheetRecord) => {
             const match = r.employee_id === currentEmployee?.employee_id;
-            console.log(
-              `Record: ${r.employee_id} === ${currentEmployee?.employee_id}? ${match}`,
-            );
             return match;
           })
           .map((r: RawSheetRecord) => ({
