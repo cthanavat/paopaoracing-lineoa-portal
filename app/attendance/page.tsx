@@ -1102,7 +1102,7 @@ export default function AttendancePage() {
               className="mt-6 rounded-t-2xl bg-blue-100 px-4 py-4"
             >
               {" "}
-              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold text-blue-400">
+              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold text-blue-600">
                 ลงวันหยุด
               </h3>
               <div className="mb-2">
