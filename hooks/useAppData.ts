@@ -14,6 +14,7 @@ export function useAppData() {
     setLoadHistory,
     firstLoad,
     setFirstLoad,
+    setEmployee,
   } = useAppStore();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +151,52 @@ export function useAppData() {
       fetchHistory();
     }
   }, [user, config, setHistoryList, setLoadHistory]);
+
+  // Fetch Employees (for auto-redirect)
+  useEffect(() => {
+    async function fetchEmployees() {
+      if (!config?.employees) return;
+
+      try {
+        const res = await fetch("/api/gSheet/get", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sheet: {
+              sheetId: `${config.employees.sheetId}`,
+              range: `${config.employees.range}`,
+            },
+          }),
+        });
+
+        const result = await res.json();
+        if (result.data) {
+          const foundEmployee = result.data.find(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (e: any) => e.userId === user?.userId,
+          );
+
+          if (foundEmployee) {
+            // It's an employee!
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setEmployee(foundEmployee as any);
+            console.log("✅ User identified as Employee, redirecting...");
+
+            if (firstLoad) {
+              setFirstLoad(false);
+              router.push("/attendance");
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch employees:", err);
+      }
+    }
+
+    if (user && config?.employees) {
+      fetchEmployees();
+    }
+  }, [user, config, setFirstLoad, firstLoad, router, setEmployee]);
 
   return { error };
 }
