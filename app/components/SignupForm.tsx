@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "flowbite-react";
-import { useAppStore } from "@/store/useAppStore";
+import { useAppStore, Member } from "@/store/useAppStore";
 import { useRouter } from "next/navigation";
 import { NotificationState, ModalState } from "@/types/ui";
 import { validatePhone } from "@/lib/utils/validation";
@@ -18,7 +18,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
   setModal,
   sendLiffMessage,
 }) => {
-  const { user, config, memberAll } = useAppStore();
+  const { user, config, memberAll, setMemberAll, setMember } = useAppStore();
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSignup, setSignup] = useState(false);
   const router = useRouter();
@@ -81,28 +81,74 @@ const SignupForm: React.FC<SignupFormProps> = ({
         }),
       });
 
+      console.log("📡 [API] Response status:", res.status, res.statusText);
+      console.log("📡 [API] Response ok:", res.ok);
+
       const result = await res.json();
-      if (result.success) {
-        await fetch("/api/pushover", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: "สมาชิกใหม่",
-            message: `${form.name} (${form.phone}) สมัครสมาชิกแล้ว`,
-          }),
-        });
+      console.log("📡 [API] Response body:", result);
 
-        await sendLiffMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
+      if (res.ok && result.success) {
+        // Try sending notifications, but don't fail registration if they fail
+        try {
+          await fetch("/api/pushover", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "สมาชิกใหม่",
+              message: `${form.name} (${form.phone}) สมัครสมาชิกแล้ว`,
+            }),
+          });
+        } catch (notifError) {
+          console.error("Failed to send Pushover notification:", notifError);
+        }
 
-        setSignup(false);
+        try {
+          await sendLiffMessage(`${form.name} (${form.phone}) สมัครสมาชิกแล้ว`);
+        } catch (liffError) {
+          console.error("Failed to send LIFF message:", liffError);
+        }
+
         setNotification({
           show: true,
           message: "สมัครสมาชิกสำเร็จ!",
           type: "success",
         });
-        setTimeout(() => {
-          router.refresh();
-        }, 3000);
+
+        // Manually refetch member data to update UI
+        setTimeout(async () => {
+          try {
+            const res = await fetch("/api/gSheet/get", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sheet: {
+                  sheetId: config.userLine?.sheetId,
+                  range: config.userLine?.range,
+                },
+              }),
+            });
+            const memberData = await res.json();
+            if (memberData.data) {
+              setMemberAll(memberData.data);
+              // Find and set the current user's member data
+              if (user?.userId) {
+                const userMember = memberData.data.find(
+                  (m: Member) => m.userId === user.userId,
+                );
+                if (userMember) {
+                  setMember(userMember);
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Failed to refetch member data:", err);
+            // Fallback to router refresh if refetch fails
+            router.refresh();
+          } finally {
+            // Re-enable button after refetch completes
+            setSignup(false);
+          }
+        }, 1500);
       } else {
         setSignup(false);
         setModal({
@@ -160,7 +206,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
         size="md"
         disabled={isSignup}
       >
-        Submit
+        {isSignup ? "กำลังสมัครสมาชิก..." : "Submit"}
       </Button>
     </form>
   );

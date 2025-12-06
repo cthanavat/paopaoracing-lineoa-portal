@@ -71,15 +71,21 @@ export function useLiff() {
   }, [setUser, setLoadUser, setIsLiffReady, setIsLiffLoading, setIsInClient]);
 
   const sendMessage = async (text: string) => {
-    if (!isLiffReady) {
-      throw new Error("LIFF is not initialized");
-    }
+    // Just check state, if not ready, simply don't call anything
+    if (!isLiffReady) return;
+
     try {
       const liffModule = await import("@line/liff");
+
+      // If not in LIFF client (e.g. external browser), just return
+      if (!liffModule.default.isInClient()) return;
+
+      // If not logged in, just return
+      if (!liffModule.default.isLoggedIn()) return;
+
       await liffModule.default.sendMessages([{ type: "text", text }]);
     } catch (error) {
       console.error("Error sending message:", error);
-      throw error;
     }
   };
 
