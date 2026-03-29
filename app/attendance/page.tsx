@@ -36,6 +36,7 @@ import type {
   Employee,
   LeaveRecord,
 } from "./types/attendance";
+import { authenticatedFetch } from "@/lib/utils/apiClient";
 
 export default function AttendancePage() {
   const {
@@ -174,15 +175,9 @@ export default function AttendancePage() {
   const loadEmployees = async () => {
     // console.log("📋 [loadEmployees] Called");
     try {
-      const res = await fetch("/api/gSheet/get", {
+      const res = await authenticatedFetch("/api/gSheet/get", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sheet: {
-            sheetId: `${config.employees.sheetId}`,
-            range: `${config.employees.range}`,
-          },
-        }),
+        body: JSON.stringify({ resource: "employees" }),
       });
       const result = await res.json();
       if (result.data) {
@@ -211,20 +206,14 @@ export default function AttendancePage() {
     }
   };
 
-  const loadAttendanceData = async (employeeData: Employee) => {
+  const loadAttendanceData = async (employeeData?: Employee) => {
     // console.log("📅 [loadAttendanceData] Called");
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const attendanceRes = await fetch("/api/gSheet/get", {
+      const attendanceRes = await authenticatedFetch("/api/gSheet/get", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sheet: {
-            sheetId: `${config.attendance.sheetId}`,
-            range: `${config.attendance.range}`,
-          },
-        }),
+        body: JSON.stringify({ resource: "attendance" }),
       });
       const attendanceResult = await attendanceRes.json();
 
@@ -262,15 +251,9 @@ export default function AttendancePage() {
 
         // Fetch and merge leave data
         try {
-          const leaveRes = await fetch("/api/gSheet/get", {
+          const leaveRes = await authenticatedFetch("/api/gSheet/get", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              sheet: {
-                sheetId: `${config.employee_leaves.sheetId}`,
-                range: `${config.employee_leaves.range}`,
-              },
-            }),
+            body: JSON.stringify({ resource: "employee_leaves" }),
           });
           const leaveResult = await leaveRes.json();
           if (leaveResult.data) {
@@ -392,15 +375,9 @@ export default function AttendancePage() {
   ) => {
     // console.log("🏖️ [loadLeaveData] Called");
     try {
-      const res = await fetch("/api/gSheet/get", {
+      const res = await authenticatedFetch("/api/gSheet/get", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sheet: {
-            sheetId: `${config.employee_leaves.sheetId}`,
-            range: `${config.employee_leaves.range}`,
-          },
-        }),
+        body: JSON.stringify({ resource: "employee_leaves" }),
       });
       const result = await res.json();
       if (result.data) {
@@ -420,8 +397,6 @@ export default function AttendancePage() {
             employee_id: r.employee_id || "",
             date: r.date || "",
             leave_option: r.leave_option || "",
-            reason: r.reason || "",
-            days: r.days || "",
             reason: r.reason || "",
             days: r.days || "",
             status: r.status || "Pending",
@@ -495,12 +470,10 @@ export default function AttendancePage() {
       const today = now.toISOString().split("T")[0];
       const time = now.toTimeString().split(" ")[0];
 
-      const res = await fetch("/api/gSheet/add", {
+      const res = await authenticatedFetch("/api/gSheet/add", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sheetId: `${config.attendance.sheetId}`,
-          range: `${config.attendance.range}`,
+          resource: "attendance",
           newRow: [
             new Date().toISOString(),
             new Date().toISOString(),
@@ -512,7 +485,6 @@ export default function AttendancePage() {
             "checked_in",
             "",
           ],
-          nickname: employee?.nickname || member.displayName, // Pass nickname
         }),
       });
 
@@ -560,16 +532,12 @@ export default function AttendancePage() {
       const workHours = `${hours}:${String(minutes).padStart(2, "0")}`;
 
       // ใน handleCheckOut() ของ AttendancePage
-      const res = await fetch("/api/attendance/checkout", {
+      const res = await authenticatedFetch("/api/attendance/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          employeeId: employee?.employee_id, // ส่ง employee_id แทน userId
           date: todayRecord.date,
           checkOut: time,
           workHours,
-          sheetId: config.attendance.sheetId,
-          nickname: employee?.nickname || member.displayName, // Pass nickname
         }),
       });
 
@@ -648,12 +616,10 @@ export default function AttendancePage() {
         days = 2;
       }
 
-      const res = await fetch("/api/gSheet/add", {
+      const res = await authenticatedFetch("/api/gSheet/add", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sheetId: `${config.employee_leaves.sheetId}`,
-          range: `${config.employee_leaves.range}`,
+          resource: "employee_leaves",
           newRow: [
             new Date().toISOString(),
             new Date().toISOString(),
@@ -665,7 +631,6 @@ export default function AttendancePage() {
             leaveForm.detail,
             "Pending",
           ],
-          nickname: employee?.nickname || member.displayName, // Pass nickname
         }),
       });
 

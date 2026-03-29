@@ -1,6 +1,7 @@
 import "./globals.css";
 import BottomNav from "./components/BottomNav";
 import { Kanit } from "next/font/google";
+import type { ReactNode } from "react";
 
 const kanit = Kanit({
   subsets: ["latin", "thai"],
@@ -12,7 +13,11 @@ export const metadata = {
   description: "This site use for customer of Paopao Racing Shop",
 };
 
-export default function RootLayout({ children }) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="th" suppressHydrationWarning>
       <head>
