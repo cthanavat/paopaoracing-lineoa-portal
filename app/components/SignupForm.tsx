@@ -6,6 +6,7 @@ import { useAppStore, Member } from "@/store/useAppStore";
 import { useRouter } from "next/navigation";
 import { NotificationState, ModalState } from "@/types/ui";
 import { validatePhone } from "@/lib/utils/validation";
+import { authenticatedFetch } from "@/lib/utils/apiClient";
 
 interface SignupFormProps {
   setNotification: React.Dispatch<React.SetStateAction<NotificationState>>;
@@ -18,7 +19,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
   setModal,
   sendLiffMessage,
 }) => {
-  const { user, config, memberAll, setMemberAll, setMember } = useAppStore();
+  const { user, memberAll, setMemberAll, setMember } = useAppStore();
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSignup, setSignup] = useState(false);
   const router = useRouter();
@@ -63,12 +64,10 @@ const SignupForm: React.FC<SignupFormProps> = ({
     }
 
     try {
-      const res = await fetch("/api/gSheet/add", {
+      const res = await authenticatedFetch("/api/gSheet/add", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sheetId: config.userLine?.sheetId,
-          range: config.userLine?.range,
+          resource: "userLine",
           newRow: [
             new Date().toISOString().slice(0, 10),
             form.name,
@@ -117,15 +116,9 @@ const SignupForm: React.FC<SignupFormProps> = ({
         // Manually refetch member data to update UI
         setTimeout(async () => {
           try {
-            const res = await fetch("/api/gSheet/get", {
+            const res = await authenticatedFetch("/api/gSheet/get", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                sheet: {
-                  sheetId: config.userLine?.sheetId,
-                  range: config.userLine?.range,
-                },
-              }),
+              body: JSON.stringify({ resource: "userLine" }),
             });
             const memberData = await res.json();
             if (memberData.data) {

@@ -1,53 +1,44 @@
-// app/api/gSheet/get/route.js
-import { google } from "googleapis";
-import { GoogleAuth } from "google-auth-library";
 import { NextResponse } from "next/server";
-import { Buffer } from "buffer";
+import {
+  getSheetRows,
+  mapRowsToObjects,
+  resolveSheetResource,
+} from "@/lib/server/googleSheets";
+import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
+
+const ALLOWED_READ_RESOURCES = new Set([
+  "config",
+  "userLine",
+  "history",
+  "employees",
+  "attendance",
+  "employee_leaves",
+]);
 
 export async function POST(request) {
-  try {
-    const { sheet } = await request.json();
+  const auth = await requireVerifiedLineUser(request);
+  if (auth.error) {
+    return auth.error;
+  }
 
-    if (!sheet || !sheet.sheetId || !sheet.range) {
+  try {
+    const { resource } = await request.json();
+
+    if (!resource || !ALLOWED_READ_RESOURCES.has(resource)) {
       return NextResponse.json(
-        { success: false, error: "Missing sheet information" },
+        { success: false, error: "Invalid sheet resource" },
         { status: 400 },
       );
     }
 
-    // Set up auth - using service account
-    const credentials = JSON.parse(
-      Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, "base64").toString(),
-    );
-
-    const auth = new GoogleAuth({
-      credentials,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-    });
-
-    const sheets = google.sheets({ version: "v4", auth });
-
-    // Get the values from the sheet
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheet.sheetId,
-      range: sheet.range,
-    });
-
-    const rows = response.data.values;
+    const { sheetId, range } = await resolveSheetResource(resource);
+    const rows = await getSheetRows(sheetId, range);
 
     if (!rows || rows.length === 0) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    // Convert to JSON with header row as keys
-    const headers = rows[0];
-    const data = rows.slice(1).map((row) => {
-      const obj = {};
-      headers.forEach((header, i) => {
-        obj[header] = row[i] || "";
-      });
-      return obj;
-    });
+    const data = mapRowsToObjects(rows);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

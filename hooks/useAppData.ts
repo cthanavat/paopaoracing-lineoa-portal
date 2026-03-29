@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore, HistoryItem } from "@/store/useAppStore";
 import { useRouter } from "next/navigation";
+import { authenticatedFetch } from "@/lib/utils/apiClient";
 
 export function useAppData() {
   const {
@@ -15,6 +16,7 @@ export function useAppData() {
     firstLoad,
     setFirstLoad,
     setEmployee,
+    isLiffReady,
   } = useAppStore();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -23,15 +25,9 @@ export function useAppData() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await fetch("/api/gSheet/get", {
+        const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: {
-              sheetId: process.env.NEXT_PUBLIC_CONFIG_SHEET_ID,
-              range: process.env.NEXT_PUBLIC_CONFIG_RANGE,
-            },
-          }),
+          body: JSON.stringify({ resource: "config" }),
         });
         const result = await res.json();
         if (result.data) {
@@ -49,8 +45,10 @@ export function useAppData() {
       }
     };
 
-    fetchConfig();
-  }, [setConfig]);
+    if (isLiffReady && user) {
+      fetchConfig();
+    }
+  }, [isLiffReady, setConfig, user]);
 
   // Fetch Members
   useEffect(() => {
@@ -58,15 +56,9 @@ export function useAppData() {
       if (!config?.userLine) return;
 
       try {
-        const res = await fetch("/api/gSheet/get", {
+        const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: {
-              sheetId: `${config.userLine.sheetId}`,
-              range: `${config.userLine.range}`,
-            },
-          }),
+          body: JSON.stringify({ resource: "userLine" }),
         });
 
         const result = await res.json();
@@ -116,15 +108,9 @@ export function useAppData() {
       if (!config?.history) return;
 
       try {
-        const res = await fetch("/api/gSheet/get", {
+        const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: {
-              sheetId: `${config.history.sheetId}`,
-              range: `${config.history.range}`,
-            },
-          }),
+          body: JSON.stringify({ resource: "history" }),
         });
 
         const result = await res.json();
@@ -158,15 +144,9 @@ export function useAppData() {
       if (!config?.employees) return;
 
       try {
-        const res = await fetch("/api/gSheet/get", {
+        const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: {
-              sheetId: `${config.employees.sheetId}`,
-              range: `${config.employees.range}`,
-            },
-          }),
+          body: JSON.stringify({ resource: "employees" }),
         });
 
         const result = await res.json();

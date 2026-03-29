@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const [message, setMessage] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
 
   // Initialize LIFF
@@ -17,13 +17,15 @@ export default function Home() {
       try {
         const liffModule = await import("@line/liff");
         await liffModule.default.init({
-          liffId: process.env.NEXT_PUBLIC_LIFF_ID,
+          liffId: process.env.NEXT_PUBLIC_LIFF_ID || "",
         });
         console.log("LIFF initialized successfully");
         setIsLiffReady(true);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("LIFF initialization failed:", err);
-        setError(err.message);
+        setError(
+          err instanceof Error ? err.message : "LIFF initialization failed",
+        );
       }
     };
 
@@ -56,9 +58,9 @@ export default function Home() {
       ]);
       console.log("Message sent successfully");
       setMessage(""); // Clear input after sending
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error sending message:", err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Failed to send message");
     }
   };
 

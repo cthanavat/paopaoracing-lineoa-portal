@@ -1,29 +1,46 @@
 // app/api/attendance/checkout/route.js
-
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { Buffer } from "buffer";
+import {
+  getEmployeeByUserId,
+  getSheetName,
+  resolveSheetResource,
+} from "@/lib/server/googleSheets";
+import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
 
 export async function POST(request) {
+  const authResult = await requireVerifiedLineUser(request);
+  if (authResult.error) {
+    return authResult.error;
+  }
+
   try {
     const body = await request.json();
     const {
-      employeeId, // Changed from userId to employeeId
       date,
       checkOut,
       workHours,
-      sheetId,
-      range = "attendance!A:J",
-      nickname, // Get nickname from body
     } = body;
 
-    // ตรวจสอบข้อมูลที่จำเป็น
-    if (!employeeId || !date || !checkOut || !workHours || !sheetId) {
+    if (!date || !checkOut || workHours === undefined || workHours === null) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 },
       );
     }
+
+    const employee = await getEmployeeByUserId(authResult.user.userId);
+
+    if (!employee) {
+      return NextResponse.json(
+        { success: false, error: "Employee record not found" },
+        { status: 403 },
+      );
+    }
+
+    const { sheetId, range } = await resolveSheetResource("attendance");
+    const sheetName = getSheetName(range, "attendance");
 
     // Auth Google Sheets
     const credentials = JSON.parse(
@@ -55,10 +72,10 @@ export async function POST(request) {
 
     // หาแถวที่ตรงกับ date + employeeId (C=employee_id, D=date)
     const rowIndex = dataRows.findIndex(
-      (row) => row[2] === employeeId && row[3] === date, // C=employee_id, D=date
+      (row) => row[2] === employee.employee_id && row[3] === date,
     );
 
-    console.log("Looking for:", { employeeId, date });
+    console.log("Looking for:", { employeeId: employee.employee_id, date });
     console.log("Found row index:", rowIndex);
 
     if (rowIndex === -1) {
@@ -79,7 +96,7 @@ export async function POST(request) {
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `attendance!A${sheetRowNumber}:J${sheetRowNumber}`,
+      range: `${sheetName}!A${sheetRowNumber}:J${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
       resource: {
         values: [updatedRow],
@@ -97,7 +114,7 @@ export async function POST(request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `Check-out: ${nickname || "Employee"} at ${checkOut} (Work Hours: ${workHours})`,
+          message: `Check-out: ${employee.nickname || authResult.user.name || "Employee"} at ${checkOut} (Work Hours: ${workHours})`,
           title: "Employee Check-out",
           token: process.env.PUSHOVER_TOKEN_ADMIN,
         }),
