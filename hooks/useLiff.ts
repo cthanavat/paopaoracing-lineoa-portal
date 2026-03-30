@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 
+const isDevMode = process.env.NODE_ENV !== "production";
+const isDevAuthEnabled =
+  isDevMode &&
+  (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true" ||
+    !process.env.NEXT_PUBLIC_LIFF_ID);
+
 export function useLiff() {
   const {
     setUser,
@@ -19,10 +25,38 @@ export function useLiff() {
         return;
       }
 
+      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+
+      if (!liffId) {
+        if (isDevAuthEnabled) {
+          const mockUser = {
+            userId: process.env.NEXT_PUBLIC_DEV_USER_ID || "dev-user",
+            displayName: process.env.NEXT_PUBLIC_DEV_USER_NAME || "Local Dev",
+            pictureUrl: "",
+            statusMessage: "LIFF bypass mode",
+          };
+
+          console.log("🧪 Running without LIFF init in local dev mode");
+          setUser(mockUser);
+          setIsLiffReady(true);
+          setIsInClient(false);
+          setError(null);
+          setLoadUser(false);
+          setIsLiffLoading(false);
+          return;
+        }
+
+        setUser(null);
+        setError("NEXT_PUBLIC_LIFF_ID is missing");
+        setLoadUser(false);
+        setIsLiffLoading(false);
+        return;
+      }
+
       try {
         const liffModule = await import("@line/liff");
         await liffModule.default.init({
-          liffId: process.env.NEXT_PUBLIC_LIFF_ID || "",
+          liffId,
         });
         setIsLiffReady(true);
         setIsInClient(liffModule.default.isInClient());
@@ -60,6 +94,11 @@ export function useLiff() {
   }, [setUser, setLoadUser, setIsLiffReady, setIsLiffLoading, setIsInClient]);
 
   const sendMessage = async (text: string) => {
+    if (isDevAuthEnabled) {
+      console.log("🧪 Skipping LIFF sendMessages in dev bypass mode:", text);
+      return;
+    }
+
     // Just check state, if not ready, simply don't call anything
     if (!isLiffReady) return;
 
