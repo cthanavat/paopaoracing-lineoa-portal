@@ -45,6 +45,7 @@ export default function AttendancePage() {
     config,
     member,
     employee,
+    employees,
     setEmployee,
     loadMember,
   } = useAppStore();
@@ -93,55 +94,45 @@ export default function AttendancePage() {
 
   useEffect(() => {
     const bootstrap = async () => {
-      console.log("🔄 Bootstrap called");
-
       // Prevent multiple simultaneous bootstraps
       if (hasInitializedRef.current) {
-        console.log("⏭️ Bootstrap already running, skipping");
         return;
       }
 
       if (!isLiffReady) {
-        console.log("⏸️ LIFF not ready yet");
         return;
       }
 
       // Proceed if LIFF is ready OR if we already have a user (from storage)
       if (!isLiffReady && !user) {
-        console.log("⏸️ LIFF not ready and no user");
         return;
       }
 
       // 1. Check User first
       if (!user) {
-        console.log("⏸️ No user, stopping loading");
         setLoading(false);
         return;
       }
 
       // 2. If user exists, check if member is still loading
       if (loadMember) {
-        console.log("⏸️ Member is still loading...");
         return;
       }
 
       // 3. Check if member exists
       if (!member) {
-        console.log("⏸️ No member found, stopping loading");
         setLoading(false);
         return;
       }
 
       // Prevent re-fetching if already loaded for this user
       if (dataLoadedRef.current === user.userId) {
-        console.log("✅ Data already loaded for this user");
         setLoading(false);
         return;
       }
 
       try {
         hasInitializedRef.current = true;
-        console.log("🚀 Starting data fetch for user");
         setLoading(true);
 
         // Load attendance & leave data
@@ -155,7 +146,6 @@ export default function AttendancePage() {
         }
 
         dataLoadedRef.current = user.userId;
-        console.log("✅ All data loaded successfully");
       } catch (error) {
         console.error("❌ Initialize error:", error);
         setNotification({
@@ -175,6 +165,23 @@ export default function AttendancePage() {
   const loadEmployees = async () => {
     // console.log("📋 [loadEmployees] Called");
     try {
+      if (employees.length > 0) {
+        const employeeMap = new Map<string, string>();
+        employees.forEach((e: RawSheetRecord) => {
+          if (e.employee_id) {
+            employeeMap.set(e.employee_id, e.nickname || e.name || "");
+          }
+        });
+
+        if (member) {
+          const foundEmployee = employees.find(
+            (e: RawSheetRecord) => e.userId === member.userId,
+          );
+          setEmployee((foundEmployee as Employee) || null);
+          return { foundEmployee, employeeMap };
+        }
+      }
+
       const res = await authenticatedFetch("/api/gSheet/get", {
         method: "POST",
         body: JSON.stringify({ resource: "employees" }),
@@ -195,7 +202,6 @@ export default function AttendancePage() {
             (e: any) => e.userId === member.userId,
           )[0];
           setEmployee(foundEmployee || null);
-          console.log("✅ Employee loaded:");
           return { foundEmployee, employeeMap }; // Return map as well
         }
       }
@@ -220,9 +226,6 @@ export default function AttendancePage() {
       const currentEmployee = (employeeData || employee) as
         | Employee
         | undefined;
-      console.log("📊 Attendance data loaded:");
-      // console.log("🔍 Filtering by employee:");
-
       if (attendanceResult.data) {
         let userRecords = (attendanceResult.data as RawSheetRecord[])
           .filter((r: RawSheetRecord) => {
@@ -349,8 +352,6 @@ export default function AttendancePage() {
           (a: AttendanceRecord, b: AttendanceRecord) =>
             new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
-
-        console.log("✅ Filtered records ");
         setAttendanceHistory(userRecords);
         setTodayRecord(
           userRecords.find(
@@ -462,8 +463,6 @@ export default function AttendancePage() {
 
   const handleCheckIn = async () => {
     if (!user || !member || !employee) return;
-    console.log("🕒 Check-in requested...");
-    console.log("Employee ID:", (employee as Employee)?.employee_id);
     setActionLoading(true);
     try {
       const now = new Date();
@@ -490,7 +489,6 @@ export default function AttendancePage() {
 
       const result = await res.json();
       if (result.success) {
-        console.log("✅ Check-in successful.");
         setNotification({
           show: true,
           message: `เช็คอินสำเร็จ เวลา ${time}`,
@@ -514,11 +512,6 @@ export default function AttendancePage() {
 
   const handleCheckOut = async () => {
     if (!user || !todayRecord || !employee || !member) return;
-    console.log("🕒 Check-out requested...");
-    console.log(
-      "Employee ID for checkout:",
-      (employee as Employee)?.employee_id,
-    );
     setActionLoading(true);
     try {
       const now = new Date();
@@ -543,7 +536,6 @@ export default function AttendancePage() {
 
       const result = await res.json();
       if (result.success) {
-        console.log("✅ Check-out successful.");
         setNotification({
           show: true,
           message: `เช็คเอาท์สำเร็จ เวลา ${time} (ทำงาน ${workHours} ชั่วโมง)`,
@@ -568,7 +560,6 @@ export default function AttendancePage() {
   const handleLeaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !member) return;
-    console.log("📝 Leave request submitting...");
     setActionLoading(true);
 
     try {
@@ -636,7 +627,6 @@ export default function AttendancePage() {
 
       const result = await res.json();
       if (result.success) {
-        console.log("✅ Leave request submitted successfully.");
         setNotification({
           show: true,
           message: "ส่งคำขอลาสำเร็จ",
@@ -694,8 +684,11 @@ export default function AttendancePage() {
   });
 
   return (
-    <main className="min-h-screen bg-gray-50 p-5 pb-20">
-      <div className="mb-4">
+    <main className="min-h-screen bg-[#F9F9FA] px-4 py-4 pb-24">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
+
+      <div className="relative mx-auto max-w-md">
+      <div className="mb-4 rounded-[22px] border border-white/80 bg-white/78 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
         <UserProfile
           pictureUrl={user.pictureUrl}
           displayName={employee?.nickname || user.displayName}
@@ -708,7 +701,7 @@ export default function AttendancePage() {
         />
         {!useAppStore.getState().isInClient &&
           employee?.userRole === "admin" && (
-            <div className="mt-2 flex justify-center">
+            <div className="mt-3 flex justify-center">
               <Button
                 color="light"
                 size="xs"
@@ -718,6 +711,7 @@ export default function AttendancePage() {
                     window.location.reload();
                   }
                 }}
+                className="rounded-full border border-[#ececf0] bg-[#F9F9FA] px-4 text-xs font-medium text-gray-600"
               >
                 Logout
               </Button>
@@ -726,10 +720,11 @@ export default function AttendancePage() {
       </div>
 
       {/* Navigation tabs */}
+      <div className="rounded-[22px] border border-white/80 bg-white/88 px-4 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
       <Tabs
         aria-label="Tabs with underline"
         variant="underline"
-        className="flex min-w-2xs items-center-safe"
+        className="apple-tabs flex min-w-2xs items-center-safe"
       >
         <TabItem
           active
@@ -738,39 +733,39 @@ export default function AttendancePage() {
           className="flex items-center justify-center"
         >
           <div className="mx-auto max-w-xs">
-            <p className="text-md text-center font-semibold text-gray-900">
+            <p className="text-center text-sm font-medium tracking-tight text-gray-500">
               วันที่ {todayFormatted}
             </p>
 
             <div className="mt-2 grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-green-50 p-4">
-                <div className="mb-2 flex items-center space-x-2 text-green-600">
+              <div className="rounded-[18px] border border-[#ececf0] bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+                <div className="mb-2 flex items-center space-x-2 text-emerald-600">
                   <HiLogin className="h-5 w-5" />
-                  <span className="font-medium">เข้างาน</span>
+                  <span className="text-sm font-medium">เข้างาน</span>
                 </div>
-                <p className="text-2xl text-green-700">
+                <p className="text-2xl font-semibold tracking-tight text-emerald-700">
                   {todayRecord?.checkIn || "--:--:--"}
                 </p>
               </div>
 
-              <div className="rounded-lg bg-red-50 p-4">
-                <div className="mb-2 flex items-center space-x-2 text-red-600">
+              <div className="rounded-[18px] border border-[#ececf0] bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+                <div className="mb-2 flex items-center space-x-2 text-rose-600">
                   <HiLogout className="h-5 w-5" />
-                  <span className="font-medium">ออกงาน</span>
+                  <span className="text-sm font-medium">ออกงาน</span>
                 </div>
-                <p className="text-2xl text-red-700">
+                <p className="text-2xl font-semibold tracking-tight text-rose-700">
                   {todayRecord?.checkOut || "--:--:--"}
                 </p>
               </div>
             </div>
 
-            <div className="mx-8 mt-4 space-y-3">
+            <div className="mx-6 mt-5 space-y-3">
               {!todayRecord && (
                 <Button
                   onClick={handleCheckIn}
                   disabled={actionLoading}
                   color="success"
-                  className="hover:bg-black-800 w-full rounded-full bg-green-700 py-2 text-sm font-medium text-white hover:opacity-90"
+                  className="w-full rounded-full border border-emerald-200 bg-emerald-600 py-2.5 text-sm font-medium text-white shadow-[0_12px_28px_rgba(5,150,105,0.22)] hover:bg-emerald-700 hover:opacity-100"
                   size="md"
                 >
                   <HiLogin className="mr-2 h-5 w-5" />
@@ -783,7 +778,7 @@ export default function AttendancePage() {
                   onClick={handleCheckOut}
                   disabled={actionLoading}
                   color="failure"
-                  className="hover:bg-black-800 w-full rounded-full bg-red-700 py-2 text-sm font-medium text-white hover:opacity-90"
+                  className="w-full rounded-full border border-rose-200 bg-rose-600 py-2.5 text-sm font-medium text-white shadow-[0_12px_28px_rgba(225,29,72,0.2)] hover:bg-rose-700 hover:opacity-100"
                   size="md"
                 >
                   <HiLogout className="mr-2 h-5 w-5" />
@@ -792,7 +787,7 @@ export default function AttendancePage() {
               )}
 
               {todayRecord?.checkOut && (
-                <div className="rounded-lg bg-blue-50 p-3 text-center">
+                <div className="rounded-[18px] border border-[#ececf0] bg-[#f7f7f8] p-3 text-center">
                   <div className="mb-2 flex items-center justify-center space-x-2">
                     <HiClipboardCheck className="h-5 w-5" />
                     <span className="font-medium">บันทึกเวลาเรียบร้อยแล้ว</span>
@@ -804,7 +799,7 @@ export default function AttendancePage() {
               )}
             </div>
 
-            <div className="my-8 border-t border-gray-700"></div>
+            <div className="my-8 border-t border-[#ececf0]"></div>
 
             <div className="mx-auto max-w-xs min-w-2xs px-4 pt-0">
               <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
@@ -819,7 +814,7 @@ export default function AttendancePage() {
         >
           <div className="mx-auto max-w-md space-y-4">
             {attendanceHistory.length === 0 ? (
-              <Card>
+              <Card className="rounded-[18px] border border-[#ececf0] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
                 <p className="text-center text-gray-500">ยังไม่มีประวัติ</p>
               </Card>
             ) : (
@@ -969,10 +964,9 @@ export default function AttendancePage() {
           <div className="mt-6">
             <form
               onSubmit={handleLeaveSubmit}
-              className="mt-6 rounded-t-2xl bg-blue-100 px-4 py-4"
+              className="mt-6 rounded-[18px] border border-[#ececf0] bg-white px-4 py-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
             >
-              {" "}
-              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold text-blue-600">
+              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold tracking-tight text-gray-950">
                 ลงวันหยุด
               </h3>
               <div className="mb-2">
@@ -985,7 +979,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, date: e.target.value })
                   }
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-[18px] border border-[#e6e6ea] bg-[#f7f7f8] px-4 py-2.5 text-sm shadow-sm focus:border-[#d5d9e2] focus:bg-white focus:ring-2 focus:ring-[#d5d9e2] focus:outline-none"
                   required
                 />
               </div>
@@ -1001,7 +995,7 @@ export default function AttendancePage() {
                       leave_option: e.target.value,
                     })
                   }
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-[18px] border border-[#e6e6ea] bg-[#f7f7f8] px-4 py-2.5 text-sm shadow-sm focus:border-[#d5d9e2] focus:bg-white focus:ring-2 focus:ring-[#d5d9e2] focus:outline-none"
                 >
                   <option value="ครึ่งวัน">ครึ่งวัน</option>
                   <option value="1 วัน">1 วัน</option>
@@ -1017,7 +1011,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, reason: e.target.value })
                   }
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-[18px] border border-[#e6e6ea] bg-[#f7f7f8] px-4 py-2.5 text-sm shadow-sm focus:border-[#d5d9e2] focus:bg-white focus:ring-2 focus:ring-[#d5d9e2] focus:outline-none"
                 >
                   <option value="วันหยุด">วันหยุด</option>
                   <option value="ลาป่วย">ลาป่วย</option>
@@ -1035,7 +1029,7 @@ export default function AttendancePage() {
                     setLeaveForm({ ...leaveForm, detail: e.target.value })
                   }
                   rows={3}
-                  className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-black focus:outline-none"
+                  className="w-full rounded-[18px] border border-[#e6e6ea] bg-[#f7f7f8] px-4 py-2 text-sm shadow-sm focus:border-[#d5d9e2] focus:bg-white focus:ring-2 focus:ring-[#d5d9e2] focus:outline-none"
                   placeholder="ระบุเหตุผลการลา..."
                 />
               </div>
@@ -1043,15 +1037,15 @@ export default function AttendancePage() {
                 <Button
                   type="submit"
                   disabled={actionLoading}
-                  className="text-md w-full rounded-full bg-orange-400 py-2 font-medium text-white hover:bg-red-800 hover:opacity-90"
+                  className="text-md w-full rounded-full border border-[#e7e7eb] bg-[#111111] py-2.5 font-medium text-white shadow-[0_12px_32px_rgba(17,17,17,0.2)] hover:bg-[#202020] hover:opacity-100"
                   size="md"
                 >
                   {actionLoading ? "กำลังส่ง..." : "ส่งคำขอ"}
                 </Button>
               </div>
             </form>
-            <div className="rounded-b-2xl bg-blue-200 px-3 pt-6 pb-4">
-              <h3 className="mb-4 text-center text-lg font-semibold text-gray-900">
+            <div className="mt-4 rounded-[18px] border border-[#ececf0] bg-white px-3 pt-6 pb-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+              <h3 className="mb-4 text-center text-lg font-semibold tracking-tight text-gray-900">
                 คำขอทั้งหมด
               </h3>
               {leaveHistory.length === 0 ? (
@@ -1061,7 +1055,7 @@ export default function AttendancePage() {
                   {leaveHistory.map((leave, index) => (
                     <div
                       key={index}
-                      className="rounded-xl bg-blue-100 p-4 shadow-lg"
+                      className="rounded-[18px] border border-[#ececf0] bg-[#fafafb] p-4"
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -1113,12 +1107,14 @@ export default function AttendancePage() {
           </div>
         </TabItem>
       </Tabs>
+      </div>
       <Notification
         show={notification.show}
         type={notification.type}
         message={notification.message}
         onClose={() => setNotification((prev) => ({ ...prev, show: false }))}
       />
+      </div>
     </main>
   );
 }

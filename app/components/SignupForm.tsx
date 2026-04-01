@@ -11,7 +11,7 @@ import { authenticatedFetch } from "@/lib/utils/apiClient";
 interface SignupFormProps {
   setNotification: React.Dispatch<React.SetStateAction<NotificationState>>;
   setModal: React.Dispatch<React.SetStateAction<ModalState>>;
-  sendLiffMessage: (msg: string) => Promise<void>;
+  sendLiffMessage: (msg: string) => Promise<boolean>;
 }
 
 const SignupForm: React.FC<SignupFormProps> = ({
@@ -79,12 +79,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
           ],
         }),
       });
-
-      console.log("📡 [API] Response status:", res.status, res.statusText);
-      console.log("📡 [API] Response ok:", res.ok);
-
       const result = await res.json();
-      console.log("📡 [API] Response body:", result);
 
       if (res.ok && result.success) {
         // Try sending notifications, but don't fail registration if they fail
@@ -168,34 +163,45 @@ const SignupForm: React.FC<SignupFormProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-md min-w-2xs space-y-2 rounded-xl bg-white p-6"
+      className="max-w-md min-w-2xs space-y-4 rounded-[18px] border border-[#ececf0] bg-white px-5 py-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]"
     >
-      <h4 className="text-center text-lg font-semibold">สมัครสมาชิก</h4>
+      <div className="space-y-1 text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.24em] text-gray-400">
+          New Member
+        </p>
+        <h4 className="text-xl font-semibold tracking-tight text-gray-950">
+          สมัครสมาชิก
+        </h4>
+      </div>
       <div>
-        <label className="mb-1 block text-sm text-gray-600">ชื่อ</label>
+        <label className="mb-1.5 block text-sm font-medium text-gray-600">
+          ชื่อ
+        </label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="w-full rounded-md border border-gray-300 px-4 py-2 text-base focus:ring-2 focus:ring-black focus:outline-none"
+          className="h-12 w-full rounded-[18px] border border-[#e6e6ea] bg-[#F9F9FA] px-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-[#d5d9e2] focus:bg-white focus:ring-2 focus:ring-[#d5d9e2] focus:outline-none"
           placeholder="ใช้ชื่อจริง (สำหรับ ยื่นประกัน)"
           required
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm text-gray-600">เบอร์โทร</label>
+        <label className="mb-1.5 block text-sm font-medium text-gray-600">
+          เบอร์โทร
+        </label>
         <input
           type="text"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          className="mb-4 w-full rounded-md border border-gray-300 px-4 py-2 text-base focus:ring-2 focus:ring-black focus:outline-none"
+          className="w-full rounded-[18px] border border-[#e6e6ea] bg-[#F9F9FA] px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-[#d5d9e2] focus:bg-white focus:ring-2 focus:ring-[#d5d9e2] focus:outline-none"
           placeholder="0123456789"
           required
         />
       </div>
       <Button
         type="submit"
-        className="w-full rounded-full bg-black py-2 text-sm font-medium text-white hover:bg-red-800 hover:opacity-90"
+        className="w-full rounded-full border border-[#e7e7eb] bg-[#111111] py-2.5 text-sm font-medium text-white shadow-[0_12px_32px_rgba(17,17,17,0.22)] hover:bg-[#202020] hover:opacity-100"
         size="md"
         disabled={isSignup}
       >

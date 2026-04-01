@@ -9,9 +9,17 @@ import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
 const ALLOWED_READ_RESOURCES = new Set([
   "config",
   "userLine",
+  "bill_names",
+  "bill_payments",
   "history",
   "employees",
   "attendance",
+  "employee_leaves",
+]);
+
+const OPTIONAL_READ_RESOURCES = new Set([
+  "history",
+  "bill_payments",
   "employee_leaves",
 ]);
 
@@ -21,8 +29,10 @@ export async function POST(request) {
     return auth.error;
   }
 
+  let resource;
+
   try {
-    const { resource } = await request.json();
+    ({ resource } = await request.json());
 
     if (!resource || !ALLOWED_READ_RESOURCES.has(resource)) {
       return NextResponse.json(
@@ -42,6 +52,19 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
+    const isMissingResourceError =
+      typeof error?.message === "string" &&
+      (error.message.includes("Unknown sheet resource:") ||
+        error.message.includes("Config sheet is not configured"));
+
+    if (OPTIONAL_READ_RESOURCES.has(resource) && isMissingResourceError) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        warning: error.message,
+      });
+    }
+
     console.error("Error fetching sheet data:", error);
     return NextResponse.json(
       { success: false, error: error.message },

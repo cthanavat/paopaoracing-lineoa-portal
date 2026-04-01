@@ -2,13 +2,13 @@
 
 import React from "react";
 import { TabItem, Tabs } from "flowbite-react";
-import { HiClock, HiClipboardList, HiUserCircle } from "react-icons/hi";
+import { HiClock, HiUserCircle } from "react-icons/hi";
 import { useAppStore } from "@/store/useAppStore";
 import HistoryView from "./HistoryView";
 import { NotificationState } from "@/types/ui";
 
 interface MemberViewProps {
-  sendMessage: (msg: string) => Promise<void>;
+  sendMessage: (msg: string) => Promise<boolean>;
   setNotification: React.Dispatch<React.SetStateAction<NotificationState>>;
 }
 
@@ -16,16 +16,31 @@ const MemberView: React.FC<MemberViewProps> = ({
   sendMessage,
   setNotification,
 }) => {
-  const { member, isLiffReady } = useAppStore();
+  const { member, isLiffReady, isInClient } = useAppStore();
 
   if (!member) return null;
 
-  const handleServiceClick = async () => {
+  const isActionEnabled = isLiffReady && isInClient;
+
+  const formatToday = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleServiceClick = async (service: string) => {
     try {
-      await sendMessage(`${new Date().toLocaleDateString()}\nสลับยาง`);
+      const sent = await sendMessage(`${service} ${formatToday()}`);
+
+      if (!sent) {
+        throw new Error("ส่งข้อความไม่สำเร็จ");
+      }
+
       setNotification({
         show: true,
-        message: "Message sent successfully",
+        message: "ส่งข้อความเข้า LINE สำเร็จ",
         type: "success",
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,7 +57,7 @@ const MemberView: React.FC<MemberViewProps> = ({
     <Tabs
       aria-label="Tabs with underline"
       variant="underline"
-      className="flex min-w-2xs items-center-safe pt-0"
+      className="apple-tabs flex min-w-2xs items-center-safe pt-0"
     >
       <TabItem
         active
@@ -51,12 +66,46 @@ const MemberView: React.FC<MemberViewProps> = ({
         className="flex items-center justify-center"
       >
         <div className="flex flex-col items-center">
-          <div className="my-3 flex min-w-2xs justify-center">
-            <div className="card">
-              <p className="heading text-gray-500">Paopao Racing</p>
-              <p className="text-gray-600">{member.name}</p>
-              <p className="text-gray-700">{member.phone}</p>
-              <p>Member</p>
+          <div className="my-2 flex min-w-2xs justify-center">
+            <div className="w-full rounded-[18px] border border-[#ececf0] bg-white px-5 py-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+              <p className="text-xs font-medium tracking-[0.24em] text-gray-400 uppercase">
+                Paopao Racing
+              </p>
+              <div className="mt-4 space-y-1">
+                <p className="text-xl font-semibold tracking-tight text-gray-950">
+                  {member.name}
+                </p>
+                <p className="text-sm text-gray-500">{member.phone}</p>
+              </div>
+              <div className="mt-4 inline-flex rounded-full border border-[#ececf0] bg-[#f8f8fa] px-3 py-1 text-xs font-medium text-gray-600">
+                Member
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-1 w-full rounded-[18px] border border-[#ececf0] bg-[#fcfcfd] p-3 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
+            <div className="mb-3">
+              <p className="text-[11px] font-medium tracking-[0.18em] text-gray-400 uppercase">
+                Quick Actions
+              </p>
+            </div>
+
+            <div className="space-y-2">
+                <button
+                  onClick={() => handleServiceClick("เข้ารับบริการ")}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#e7e7eb] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:bg-[#F9F9FA] focus:bg-[#F9F9FA] focus-visible:ring-2 focus-visible:ring-[#bfc8d8] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!isActionEnabled}
+                >
+                  เข้ารับบริการ
+                </button>
+
+                <button
+                  onClick={() => handleServiceClick("สลับยาง")}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#e7e7eb] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:bg-[#F9F9FA] focus:bg-[#F9F9FA] focus-visible:ring-2 focus-visible:ring-[#bfc8d8] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!isActionEnabled}
+                >
+                  สลับยาง
+                </button>
             </div>
           </div>
         </div>
@@ -64,18 +113,6 @@ const MemberView: React.FC<MemberViewProps> = ({
 
       <TabItem title="ประวัติ" icon={HiClock}>
         <HistoryView />
-      </TabItem>
-
-      <TabItem title="บริการ" icon={HiClipboardList}>
-        <div className="flex flex-col items-center">
-          <button
-            onClick={handleServiceClick}
-            className="mt-4 max-w-xs rounded-full bg-black px-6 py-2 text-white transition-colors duration-300 hover:bg-blue-500 focus:bg-gray-500 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none"
-            disabled={!isLiffReady}
-          >
-            สลับยาง
-          </button>
-        </div>
       </TabItem>
     </Tabs>
   );
