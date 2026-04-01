@@ -1,6 +1,6 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
 import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
-import { debugLog } from "@/lib/utils/debug";
+import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
 
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
@@ -34,6 +34,10 @@ export async function createAuthenticatedHeaders(
   }
 
   headers.set("Authorization", `Bearer ${idToken}`);
+
+  if (isDebugEnabled()) {
+    headers.set("x-debug-auth", "true");
+  }
 
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");

@@ -28,3 +28,7 @@ export function debugLog(...args: unknown[]) {
     console.log(...args);
   }
 }
+
+export function isDebugEnabled() {
+  return isRuntimeDebugEnabled();
+}
