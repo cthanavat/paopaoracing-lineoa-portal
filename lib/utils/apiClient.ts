@@ -1,6 +1,13 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
-import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
+import {
+  getBrowserAuthUser,
+  getStoredLineProfile,
+} from "@/lib/utils/browserAuthUser";
 import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
+import {
+  ensureFreshLiffSession,
+  refreshExpiredLiffSession,
+} from "@/lib/utils/liffSession";
 
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
@@ -26,12 +33,14 @@ export async function createAuthenticatedHeaders(
     return headers;
   }
 
-  const liffModule = await import("@line/liff");
-  const idToken = liffModule.default.getIDToken();
+  const storedLineProfile = getStoredLineProfile();
 
-  if (!idToken) {
-    throw new Error("LINE session expired. Please sign in again.");
+  if (storedLineProfile?.userId) {
+    headers.set("x-line-profile-user-id", storedLineProfile.userId);
+    headers.set("x-line-profile-name", storedLineProfile.displayName);
   }
+
+  const { idToken } = await ensureFreshLiffSession();
 
   headers.set("Authorization", `Bearer ${idToken}`);
 
@@ -50,8 +59,14 @@ export async function authenticatedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
-  const headers = await createAuthenticatedHeaders(init?.headers);
-  const response = await fetch(input, { ...init, headers });
+  const sendRequest = async () => {
+    const headers = await createAuthenticatedHeaders(init?.headers);
+    const response = await fetch(input, { ...init, headers });
+
+    return { headers, response };
+  };
+
+  const { headers, response } = await sendRequest();
 
   debugLog("[API] fetch", {
     input: typeof input === "string" ? input : input.toString(),
@@ -76,6 +91,13 @@ export async function authenticatedFetch(
       method: init?.method || "GET",
       body: bodyText,
     });
+
+    if (
+      !shouldUseBrowserAuth() &&
+      bodyText.includes("IdToken expired.")
+    ) {
+      await refreshExpiredLiffSession();
+    }
   }
 
   return response;
