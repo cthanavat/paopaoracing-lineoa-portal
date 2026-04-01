@@ -67,13 +67,26 @@ export function useLiff() {
 
       try {
         const liffModule = await import("@line/liff");
+        debugLog("[LIFF] init:start", { liffId, useBrowserAuth });
         await liffModule.default.init({
           liffId,
         });
-        setIsLiffReady(true);
-        setIsInClient(liffModule.default.isInClient());
+        const isInClient = liffModule.default.isInClient();
+        const isLoggedIn = liffModule.default.isLoggedIn();
+        const idToken = liffModule.default.getIDToken();
 
-        if (!liffModule.default.isLoggedIn()) {
+        debugLog("[LIFF] init:ready", {
+          isInClient,
+          isLoggedIn,
+          hasIdToken: Boolean(idToken),
+          currentUrl: window.location.href,
+        });
+
+        setIsLiffReady(true);
+        setIsInClient(isInClient);
+
+        if (!isLoggedIn) {
+          debugLog("[LIFF] init:login-required");
           liffModule.default.login();
           return;
         }
@@ -85,6 +98,11 @@ export function useLiff() {
           pictureUrl: profile.pictureUrl,
           statusMessage: profile.statusMessage,
         };
+
+        debugLog("[LIFF] profile:loaded", {
+          userId: profile.userId,
+          displayName: profile.displayName,
+        });
 
         window.localStorage.setItem("line-user", JSON.stringify(userData));
         setUser(userData);
@@ -116,19 +134,31 @@ export function useLiff() {
 
     try {
       const liffModule = await import("@line/liff");
+      const isInClient = liffModule.default.isInClient();
+      const isLoggedIn = liffModule.default.isLoggedIn();
+      const idToken = liffModule.default.getIDToken();
 
-      if (!liffModule.default.isInClient()) {
+      debugLog("[LIFF] sendMessages:attempt", {
+        text,
+        isInClient,
+        isLoggedIn,
+        hasIdToken: Boolean(idToken),
+      });
+
+      if (!isInClient) {
         throw new Error("กรุณาเปิดผ่าน LINE แอป เพื่อส่งข้อความเข้าห้องแชท");
       }
 
-      if (!liffModule.default.isLoggedIn()) {
+      if (!isLoggedIn) {
         throw new Error("กรุณาเข้าสู่ระบบ LINE ก่อน");
       }
 
       await liffModule.default.sendMessages([{ type: "text", text }]);
+      debugLog("[LIFF] sendMessages:success", { text });
       return true;
     } catch (error) {
       console.error("Error sending message:", error);
+      debugLog("[LIFF] sendMessages:error", error);
       if (error instanceof Error) {
         throw error;
       }
