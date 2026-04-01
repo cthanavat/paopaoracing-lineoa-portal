@@ -1,5 +1,8 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
-import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
+import {
+  getBrowserAuthUser,
+  getStoredLineProfile,
+} from "@/lib/utils/browserAuthUser";
 import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
 import {
   ensureFreshLiffSession,
@@ -28,6 +31,13 @@ export async function createAuthenticatedHeaders(
     }
 
     return headers;
+  }
+
+  const storedLineProfile = getStoredLineProfile();
+
+  if (storedLineProfile?.userId) {
+    headers.set("x-line-profile-user-id", storedLineProfile.userId);
+    headers.set("x-line-profile-name", storedLineProfile.displayName);
   }
 
   const { idToken } = await ensureFreshLiffSession();

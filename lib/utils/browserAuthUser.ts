@@ -9,15 +9,15 @@ function getFallbackUser(): User {
   };
 }
 
-export function getBrowserAuthUser(): User {
+export function getStoredLineProfile(): User | null {
   if (typeof window === "undefined") {
-    return getFallbackUser();
+    return null;
   }
 
   const storedUser = window.localStorage.getItem("line-user");
 
   if (!storedUser) {
-    return getFallbackUser();
+    return null;
   }
 
   try {
@@ -33,6 +33,16 @@ export function getBrowserAuthUser(): User {
     }
   } catch {
     window.localStorage.removeItem("line-user");
+  }
+
+  return null;
+}
+
+export function getBrowserAuthUser(): User {
+  const storedProfile = getStoredLineProfile();
+
+  if (storedProfile) {
+    return storedProfile;
   }
 
   return getFallbackUser();
