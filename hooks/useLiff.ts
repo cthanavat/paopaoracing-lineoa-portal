@@ -3,6 +3,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
 import { debugLog } from "@/lib/utils/debug";
 import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
+import { ensureFreshLiffSession } from "@/lib/utils/liffSession";
 
 let hasInitializedLiff = false;
 
@@ -66,14 +67,17 @@ export function useLiff() {
       }
 
       try {
-        const liffModule = await import("@line/liff");
         debugLog("[LIFF] init:start", { liffId, useBrowserAuth });
+        const liffModule = await import("@line/liff");
         await liffModule.default.init({
           liffId,
         });
-        const isInClient = liffModule.default.isInClient();
-        const isLoggedIn = liffModule.default.isLoggedIn();
-        const idToken = liffModule.default.getIDToken();
+        const {
+          liff,
+          isInClient,
+          isLoggedIn,
+          idToken,
+        } = await ensureFreshLiffSession();
 
         debugLog("[LIFF] init:ready", {
           isInClient,
@@ -87,11 +91,11 @@ export function useLiff() {
 
         if (!isLoggedIn) {
           debugLog("[LIFF] init:login-required");
-          liffModule.default.login();
+          liff.login({ redirectUri: window.location.href });
           return;
         }
 
-        const profile = await liffModule.default.getProfile();
+        const profile = await liff.getProfile();
         const userData = {
           userId: profile.userId,
           displayName: profile.displayName,
@@ -133,10 +137,12 @@ export function useLiff() {
     }
 
     try {
-      const liffModule = await import("@line/liff");
-      const isInClient = liffModule.default.isInClient();
-      const isLoggedIn = liffModule.default.isLoggedIn();
-      const idToken = liffModule.default.getIDToken();
+      const {
+        liff,
+        isInClient,
+        isLoggedIn,
+        idToken,
+      } = await ensureFreshLiffSession();
 
       debugLog("[LIFF] sendMessages:attempt", {
         text,
@@ -153,7 +159,7 @@ export function useLiff() {
         throw new Error("กรุณาเข้าสู่ระบบ LINE ก่อน");
       }
 
-      await liffModule.default.sendMessages([{ type: "text", text }]);
+      await liff.sendMessages([{ type: "text", text }]);
       debugLog("[LIFF] sendMessages:success", { text });
       return true;
     } catch (error) {

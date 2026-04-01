@@ -1,6 +1,7 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
 import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
 import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
+import { ensureFreshLiffSession } from "@/lib/utils/liffSession";
 
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
@@ -26,12 +27,7 @@ export async function createAuthenticatedHeaders(
     return headers;
   }
 
-  const liffModule = await import("@line/liff");
-  const idToken = liffModule.default.getIDToken();
-
-  if (!idToken) {
-    throw new Error("LINE session expired. Please sign in again.");
-  }
+  const { idToken } = await ensureFreshLiffSession();
 
   headers.set("Authorization", `Bearer ${idToken}`);
 
