@@ -1,7 +1,10 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
 import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
 import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
-import { ensureFreshLiffSession } from "@/lib/utils/liffSession";
+import {
+  ensureFreshLiffSession,
+  refreshExpiredLiffSession,
+} from "@/lib/utils/liffSession";
 
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
@@ -46,8 +49,14 @@ export async function authenticatedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
-  const headers = await createAuthenticatedHeaders(init?.headers);
-  const response = await fetch(input, { ...init, headers });
+  const sendRequest = async () => {
+    const headers = await createAuthenticatedHeaders(init?.headers);
+    const response = await fetch(input, { ...init, headers });
+
+    return { headers, response };
+  };
+
+  const { headers, response } = await sendRequest();
 
   debugLog("[API] fetch", {
     input: typeof input === "string" ? input : input.toString(),
@@ -72,6 +81,13 @@ export async function authenticatedFetch(
       method: init?.method || "GET",
       body: bodyText,
     });
+
+    if (
+      !shouldUseBrowserAuth() &&
+      bodyText.includes("IdToken expired.")
+    ) {
+      await refreshExpiredLiffSession();
+    }
   }
 
   return response;

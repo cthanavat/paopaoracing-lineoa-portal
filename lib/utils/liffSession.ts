@@ -2,6 +2,38 @@ type DecodedIdToken = {
   exp?: number;
 };
 
+function decodeBase64Url(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4 || 4)) % 4),
+    "=",
+  );
+
+  if (typeof window !== "undefined") {
+    return window.atob(padded);
+  }
+
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+function decodeIdToken(idToken: string | null) {
+  if (!idToken) {
+    return null;
+  }
+
+  const parts = idToken.split(".");
+
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(decodeBase64Url(parts[1])) as DecodedIdToken;
+  } catch {
+    return null;
+  }
+}
+
 function isExpired(decodedIdToken: DecodedIdToken | null | undefined) {
   if (!decodedIdToken?.exp) {
     return false;
@@ -19,7 +51,7 @@ export async function ensureFreshLiffSession() {
   const isLoggedIn = liff.isLoggedIn();
   const isInClient = liff.isInClient();
   const idToken = liff.getIDToken();
-  const decodedIdToken = liff.getDecodedIDToken?.();
+  const decodedIdToken = liff.getDecodedIDToken?.() || decodeIdToken(idToken);
   const hasExpiredToken = isExpired(decodedIdToken);
 
   if (isLoggedIn && idToken && !hasExpiredToken) {
@@ -41,6 +73,25 @@ export async function ensureFreshLiffSession() {
       } catch {
         // Best effort only; login below is the important step.
       }
+    }
+
+    liff.login({ redirectUri: window.location.href });
+  }
+
+  throw new Error("LINE session expired. Redirecting to sign in again.");
+}
+
+export async function refreshExpiredLiffSession() {
+  const liffModule = await import("@line/liff");
+  const liff = liffModule.default;
+
+  if (typeof window !== "undefined") {
+    try {
+      if (liff.isLoggedIn() && !liff.isInClient()) {
+        liff.logout();
+      }
+    } catch {
+      // Best effort only.
     }
 
     liff.login({ redirectUri: window.location.href });
