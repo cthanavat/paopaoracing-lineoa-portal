@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAppStore, HistoryItem } from "@/store/useAppStore";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { authenticatedFetch } from "@/lib/utils/apiClient";
 
 export function useAppData() {
@@ -8,22 +8,31 @@ export function useAppData() {
     user,
     config,
     setConfig,
+    memberAll,
     setMember,
     setMemberAll,
+    historyList,
     setHistoryList,
     setLoadMember,
     setLoadHistory,
     firstLoad,
     setFirstLoad,
+    employees,
     setEmployee,
+    setEmployees,
     isLiffReady,
   } = useAppStore();
   const router = useRouter();
+  const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
 
   // Fetch Config
   useEffect(() => {
     const fetchConfig = async () => {
+      if (Object.keys(config || {}).length > 0) {
+        return;
+      }
+
       try {
         const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
@@ -38,7 +47,6 @@ export function useAppData() {
           }, {});
           setConfig(dataJson);
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error("Error: Get config:", err);
         setError("Failed to load configuration");
@@ -48,7 +56,7 @@ export function useAppData() {
     if (isLiffReady && user) {
       fetchConfig();
     }
-  }, [isLiffReady, setConfig, user]);
+  }, [config, isLiffReady, setConfig, user]);
 
   // Fetch Members
   useEffect(() => {
@@ -56,6 +64,20 @@ export function useAppData() {
       if (!config?.userLine) return;
 
       try {
+        const existingMembers = memberAll;
+        if (existingMembers.length > 0) {
+          if (user?.userId) {
+            const existingMember = existingMembers.find(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (m: any) => m.userId === user.userId,
+            );
+            if (existingMember) {
+              setMember(existingMember);
+            }
+          }
+          return;
+        }
+
         const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
           body: JSON.stringify({ resource: "userLine" }),
@@ -92,6 +114,7 @@ export function useAppData() {
       fetchMembers();
     }
   }, [
+    memberAll,
     user,
     config,
     setMemberAll,
@@ -108,6 +131,10 @@ export function useAppData() {
       if (!config?.history) return;
 
       try {
+        if (historyList.length > 0) {
+          return;
+        }
+
         const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
           body: JSON.stringify({ resource: "history" }),
@@ -136,7 +163,7 @@ export function useAppData() {
     if (user && config?.history) {
       fetchHistory();
     }
-  }, [user, config, setHistoryList, setLoadHistory]);
+  }, [user, config, historyList.length, setHistoryList, setLoadHistory]);
 
   // Fetch Employees (for auto-redirect)
   useEffect(() => {
@@ -144,6 +171,24 @@ export function useAppData() {
       if (!config?.employees) return;
 
       try {
+        if (employees.length > 0) {
+          const foundEmployee = employees.find(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (e: any) => e.userId === user?.userId,
+          );
+
+          if (foundEmployee) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setEmployee(foundEmployee as any);
+
+            if (firstLoad && pathname !== "/attendance") {
+              setFirstLoad(false);
+              router.push("/attendance");
+            }
+          }
+          return;
+        }
+
         const res = await authenticatedFetch("/api/gSheet/get", {
           method: "POST",
           body: JSON.stringify({ resource: "employees" }),
@@ -151,6 +196,7 @@ export function useAppData() {
 
         const result = await res.json();
         if (result.data) {
+          setEmployees(result.data);
           const foundEmployee = result.data.find(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (e: any) => e.userId === user?.userId,
@@ -160,9 +206,8 @@ export function useAppData() {
             // It's an employee!
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
-            console.log("✅ User identified as Employee, redirecting...");
 
-            if (firstLoad) {
+            if (firstLoad && pathname !== "/attendance") {
               setFirstLoad(false);
               router.push("/attendance");
             }
@@ -176,7 +221,17 @@ export function useAppData() {
     if (user && config?.employees) {
       fetchEmployees();
     }
-  }, [user, config, setFirstLoad, firstLoad, router, setEmployee]);
+  }, [
+    user,
+    config,
+    employees,
+    setEmployees,
+    setFirstLoad,
+    firstLoad,
+    router,
+    setEmployee,
+    pathname,
+  ]);
 
   return { error };
 }

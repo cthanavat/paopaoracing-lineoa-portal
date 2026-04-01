@@ -1,22 +1,21 @@
-const isDevMode = process.env.NODE_ENV !== "production";
-const isDevAuthEnabled =
-  isDevMode &&
-  (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true" ||
-    !process.env.NEXT_PUBLIC_LIFF_ID);
+import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
+import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
 
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
 ): Promise<Headers> {
   const headers = new Headers(init);
 
-  if (isDevAuthEnabled) {
+  if (shouldUseBrowserAuth()) {
+    const browserUser = getBrowserAuthUser();
+
     headers.set(
       "x-dev-auth-user-id",
-      process.env.NEXT_PUBLIC_DEV_USER_ID || "dev-user",
+      browserUser.userId,
     );
     headers.set(
       "x-dev-auth-name",
-      process.env.NEXT_PUBLIC_DEV_USER_NAME || "Local Dev",
+      browserUser.displayName,
     );
 
     if (!headers.has("Content-Type")) {

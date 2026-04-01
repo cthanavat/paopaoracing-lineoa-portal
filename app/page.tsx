@@ -36,26 +36,16 @@ export default function HomePage() {
   // Handle errors from hooks
   useEffect(() => {
     if (liffError) {
-      console.log("🔴 [Error] LIFF Error detected");
       setNotification({ show: true, message: liffError, type: "error" });
     }
     if (appDataError) {
-      console.log("🔴 [Error] App Data Error detected");
       setNotification({ show: true, message: appDataError, type: "error" });
     }
   }, [liffError, appDataError]);
 
-  // State tracking
-  useEffect(() => {
-    console.log("📊 [State] Current states:");
-  }, [user, member, config, loadUser, loadMember, isLiffLoading]);
-
   // Notification Auto-close
   useEffect(() => {
     if (notification.show) {
-      console.log(
-        `📢 [Notification] Showing ${notification.type}: ${notification.message}`,
-      );
       const timer = setTimeout(() => {
         setNotification((prev) => ({ ...prev, show: false }));
       }, 3000);
@@ -65,65 +55,56 @@ export default function HomePage() {
 
   // Loading state
   if (isLiffLoading || loadUser || !config) {
-    console.log("⏳ [Loading] Waiting for initial data...");
-    if (isLiffLoading) console.log("  - LIFF is loading");
-    if (loadUser) console.log("  - User is loading");
-    if (!config) console.log("  - Config not available (Google Sheets)");
     return (
-      <main className="flex h-screen items-center justify-center">
-        <Loader />
+      <main className="min-h-screen bg-[#F9F9FA] px-4 py-6">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md items-center justify-center rounded-[22px] border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          <Loader />
+        </div>
       </main>
     );
   }
 
   // No user
   if (!user) {
-    console.log("⚠️ [Auth] No user found");
     return (
-      <main className="flex h-screen items-center justify-center">
-        <Loader />
+      <main className="min-h-screen bg-[#F9F9FA] px-4 py-6">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md items-center justify-center rounded-[22px] border border-white/70 bg-white/80 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          <Loader />
+        </div>
       </main>
     );
   }
-
-  console.log("✅ [Render] Rendering main content");
-
   return (
-    <main className="p-5 font-sans">
-      <div>
-        <UserProfile
-          displayName={user.displayName}
-          pictureUrl={user.pictureUrl}
-          statusMessage={user.statusMessage}
-        />
-      </div>
+    <main className="min-h-screen bg-[#F9F9FA] px-4 py-4 pb-24 font-sans">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
-      <div className="flex justify-center">
-        {loadMember && config ? (
-          <>
-            {console.log("⏳ [Member] Loading member data...")}
-            <div className="my-4 flex items-center justify-center">
+      <div className="relative mx-auto flex w-full max-w-md flex-col gap-4">
+        <section className="rounded-[22px] border border-white/80 bg-white/78 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          <UserProfile
+            displayName={user.displayName}
+            pictureUrl={user.pictureUrl}
+            statusMessage={user.statusMessage}
+          />
+        </section>
+
+        <section className="rounded-[22px] border border-white/80 bg-white/88 px-4 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          {loadMember && config ? (
+            <div className="flex min-h-64 items-center justify-center">
               <Loader />
             </div>
-          </>
-        ) : member ? (
-          <>
-            {console.log("👤 [Member] Showing MemberView")}
+          ) : member ? (
             <MemberView
               sendMessage={sendMessage}
               setNotification={setNotification}
             />
-          </>
-        ) : (
-          <>
-            {console.log("📝 [Signup] Showing SignupForm")}
+          ) : (
             <SignupForm
               setNotification={setNotification}
               setModal={setModal}
               sendLiffMessage={sendMessage}
             />
-          </>
-        )}
+          )}
+        </section>
       </div>
 
       <Notification
