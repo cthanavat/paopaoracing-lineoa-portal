@@ -1,5 +1,6 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
 import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
+import { debugLog } from "@/lib/utils/debug";
 
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
@@ -46,5 +47,32 @@ export async function authenticatedFetch(
   init?: RequestInit,
 ) {
   const headers = await createAuthenticatedHeaders(init?.headers);
-  return fetch(input, { ...init, headers });
+  const response = await fetch(input, { ...init, headers });
+
+  debugLog("[API] fetch", {
+    input: typeof input === "string" ? input : input.toString(),
+    method: init?.method || "GET",
+    status: response.status,
+    hasAuthorization: headers.has("Authorization"),
+    isBrowserAuth: shouldUseBrowserAuth(),
+  });
+
+  if (response.status === 401) {
+    const clonedResponse = response.clone();
+    let bodyText = "";
+
+    try {
+      bodyText = await clonedResponse.text();
+    } catch {
+      bodyText = "";
+    }
+
+    debugLog("[API] unauthorized", {
+      input: typeof input === "string" ? input : input.toString(),
+      method: init?.method || "GET",
+      body: bodyText,
+    });
+  }
+
+  return response;
 }
