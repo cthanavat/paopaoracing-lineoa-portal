@@ -5,6 +5,7 @@ import {
   HiArrowUp,
   HiBanknotes,
   HiCalendarDays,
+  HiMiniXMark,
   HiMagnifyingGlass,
   HiMiniClock,
 } from "react-icons/hi2";
@@ -42,7 +43,12 @@ interface BillPaymentRow {
   [key: string]: string;
 }
 
-const WAITING_TASK_STATUSES = new Set(["รอติดตั้ง", "สั่งของ"]);
+const TODAY_TASK_STATUS_ORDER = new Map<string, number>([
+  ["รอติดตั้ง", 0],
+  ["สั่งของ", 1],
+  ["ส่งของ", 1],
+  ["ส่งรถแล้ว", 2],
+]);
 
 function normalizeStatus(value?: string) {
   return (value || "")
@@ -255,11 +261,29 @@ function shouldExcludeBill(bill: DashboardBill) {
   );
 }
 
+function compareTodayBills(a: DashboardBill, b: DashboardBill) {
+  const aOrder = TODAY_TASK_STATUS_ORDER.get(a.taskStatus) ?? 99;
+  const bOrder = TODAY_TASK_STATUS_ORDER.get(b.taskStatus) ?? 99;
+
+  if (aOrder !== bOrder) {
+    return aOrder - bOrder;
+  }
+
+  const aDate = parseSheetDate(a.date)?.getTime() || 0;
+  const bDate = parseSheetDate(b.date)?.getTime() || 0;
+
+  if (aDate !== bDate) {
+    return bDate - aDate;
+  }
+
+  return a.plate.localeCompare(b.plate, "th");
+}
+
 function getStatusTone(value: string) {
   const normalized = normalizeStatus(value);
 
   if (normalized === "ส่งรถแล้ว" || normalized === "จ่ายแล้ว") {
-    return "border-green-200 bg-green-50 text-green-800";
+    return "border-[#cfe2d4] bg-[#edf8ef] text-[#2c7a4b]";
   }
 
   if (
@@ -267,11 +291,16 @@ function getStatusTone(value: string) {
     normalized === "รอชำระ" ||
     normalized === "ชำระบางส่วน"
   ) {
-    return "border-amber-200 bg-amber-50 text-amber-800";
+    return "border-[#e7d7b2] bg-[#fdf5e6] text-[#9a6d14]";
   }
 
-  if (normalized === "ชำระเกิน" || normalized === "ผ่อนชำระ") {
-    return "border-violet-200 bg-violet-50 text-violet-800";
+  if (
+    normalized === "ชำระเกิน" ||
+    normalized === "ผ่อนชำระ" ||
+    normalized === "ค่าใช้จ่าย" ||
+    normalized === "ค่าอะไหล่"
+  ) {
+    return "border-[#d7cff6] bg-[#f5f1ff] text-[#6b52c8]";
   }
 
   if (
@@ -281,18 +310,58 @@ function getStatusTone(value: string) {
     normalized === "ไม่ระบุสถานะจ่ายเงิน" ||
     normalized === "ไม่ระบุสถานะบิล"
   ) {
-    return "border-blue-100 bg-blue-50 text-blue-800";
+    return "border-[#d0d9ea] bg-[#eef4fb] text-[#486da8]";
   }
 
   if (normalized === "ยกเลิก" || normalized === "ใบเสนอราคา") {
-    return "border-gray-200 bg-gray-100 text-gray-700";
+    return "border-[#e4e6eb] bg-[#f5f6f8] text-[#666f7d]";
   }
 
   if (normalized === "เงินสด") {
-    return "border-slate-200 bg-slate-100 text-slate-700";
+    return "border-[#dde2e8] bg-[#f4f6f8] text-[#55606e]";
   }
 
-  return "border-gray-200 bg-gray-50 text-gray-700";
+  return "border-[#e4e6eb] bg-[#f7f8fa] text-[#5f6875]";
+}
+
+function getSectionTone(tone: "install" | "order" | "paymentDue" | "store") {
+  if (tone === "install") {
+    return {
+      openSummary: "border-[#ecd8cb] bg-[#fcf2ed]",
+      openEyebrow: "text-[#b9764f]",
+      openTitle: "text-[#a35d33]",
+      openDescription: "text-[#93644b]",
+      openBadge: "border-[#efd8ca] bg-white text-[#a35d33]",
+    };
+  }
+
+  if (tone === "order") {
+    return {
+      openSummary: "border-[#d0d9ea] bg-[#eef4fb]",
+      openEyebrow: "text-[#6f88b4]",
+      openTitle: "text-[#486da8]",
+      openDescription: "text-[#5b79a8]",
+      openBadge: "border-[#d6e0f0] bg-white text-[#486da8]",
+    };
+  }
+
+  if (tone === "store") {
+    return {
+      openSummary: "border-[#d6dde5] bg-[#f2f5f8]",
+      openEyebrow: "text-[#738394]",
+      openTitle: "text-[#556779]",
+      openDescription: "text-[#68798a]",
+      openBadge: "border-[#dce3ea] bg-white text-[#556779]",
+    };
+  }
+
+  return {
+    openSummary: "border-[#d7cff6] bg-[#f5f1ff]",
+    openEyebrow: "text-[#8474c4]",
+    openTitle: "text-[#6b52c8]",
+    openDescription: "text-[#7868b4]",
+    openBadge: "border-[#ddd5f7] bg-white text-[#6b52c8]",
+  };
 }
 
 function StatusPill({ value }: { value: string }) {
@@ -308,17 +377,22 @@ function StatusPill({ value }: { value: string }) {
 function BillCard({
   bill,
   tone = "default",
+  defaultOpen = false,
 }: {
   bill: DashboardBill;
   tone?: "default" | "accent";
+  defaultOpen?: boolean;
 }) {
   const toneClasses =
     tone === "accent"
-      ? "border-blue-100 bg-blue-50"
-      : "border-gray-200 bg-white";
+      ? "border-[#dbe2ee] bg-[#f4f7fb]"
+      : "border-[#ececf0] bg-white";
 
   return (
-    <details className={`rounded-[18px] border ${toneClasses}`}>
+    <details
+      open={defaultOpen}
+      className={`rounded-[18px] border ${toneClasses}`}
+    >
       <summary className="cursor-pointer list-none p-3">
         <div className="flex items-start justify-between gap-3">
           <h3 className="min-w-0 text-sm font-semibold text-gray-900">
@@ -339,23 +413,23 @@ function BillCard({
         </div>
       </summary>
       <div className="px-3 pb-3">
-        <div className="border-t border-gray-100 pt-2">
-          <div className="flex items-center justify-between gap-3 text-xs text-gray-600">
-            <span>จ่ายแล้ว</span>
-            <span className="font-medium text-gray-900">{bill.paidLabel}</span>
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-3 text-xs text-gray-600">
-            <span>คงค้าง</span>
-            <span
-              className={`font-medium ${bill.remainingAmount > 0 ? "text-amber-700" : "text-green-700"}`}
-            >
-              {bill.remainingLabel}
-            </span>
-          </div>
-        </div>
-        <p className="border-t border-gray-100 pt-2 text-xs leading-5 whitespace-pre-line text-gray-600">
+        <p className="border-t border-[#f0f1f4] pt-2 text-xs leading-5 whitespace-pre-line text-gray-600">
           {bill.detail}
         </p>
+        <div className="border-t border-[#f0f1f4] pt-2">
+          <div className="flex items-center justify-end gap-3 text-xs">
+            {bill.remainingAmount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <span className="text-gray-500">คงเหลือ</span>
+                <span className="text-[#9a6d14]">{bill.remainingLabel}</span>
+                <span className="text-gray-400">/</span>
+                <span className="text-[#486da8]">{bill.totalLabel}</span>
+              </span>
+            ) : (
+              <span className="font-medium text-[#2c7a4b]">จ่ายแล้ว</span>
+            )}
+          </div>
+        </div>
       </div>
     </details>
   );
@@ -379,7 +453,7 @@ function GroupSection({
   tone?: "default" | "accent";
 }) {
   return (
-    <section className="rounded-[18px] border border-gray-200 bg-white p-3 shadow-sm">
+    <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -394,7 +468,7 @@ function GroupSection({
             </p>
           ) : null}
         </div>
-        <span className="rounded-[10px] bg-gray-100 px-2 py-1 text-[11px] text-gray-600">
+        <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
           {count} รายการ
         </span>
       </div>
@@ -405,7 +479,7 @@ function GroupSection({
             <BillCard key={bill.id} bill={bill} tone={tone} />
           ))
         ) : (
-          <div className="rounded-[18px] bg-gray-50 px-3 py-4 text-xs text-gray-500">
+          <div className="rounded-[18px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
             {emptyMessage}
           </div>
         )}
@@ -422,6 +496,7 @@ function CollapsibleGroupSection({
   bills,
   emptyMessage,
   defaultOpen,
+  tone,
 }: {
   eyebrow: string;
   title: string;
@@ -430,27 +505,54 @@ function CollapsibleGroupSection({
   bills: DashboardBill[];
   emptyMessage: string;
   defaultOpen?: boolean;
+  tone: "install" | "order" | "paymentDue" | "store";
 }) {
+  const [isOpen, setIsOpen] = useState(Boolean(defaultOpen));
+  const toneClasses = getSectionTone(tone);
+
   return (
     <details
       open={defaultOpen}
-      className="bg-white shadow-[0_1px_0_rgba(17,24,39,0.05)]"
+      className="rounded-[18px] border border-[#ececf0] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
     >
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 rounded-[18px] bg-white px-3 py-2">
+      <summary
+        className={`flex cursor-pointer list-none items-start justify-between gap-3 rounded-[18px] border px-3 py-2 transition-colors ${
+          isOpen ? toneClasses.openSummary : "border-transparent bg-[#fcfcfd]"
+        }`}
+      >
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-400 uppercase">
+          <p
+            className={`text-[11px] font-semibold tracking-[0.18em] uppercase ${
+              isOpen ? toneClasses.openEyebrow : "text-gray-400"
+            }`}
+          >
             {eyebrow}
           </p>
-          <h3 className="mt-0.5 text-sm font-semibold text-gray-900">
+          <h3
+            className={`mt-0.5 text-sm font-semibold ${
+              isOpen ? toneClasses.openTitle : "text-gray-900"
+            }`}
+          >
             {title}
           </h3>
           {description ? (
-            <p className="mt-0.5 text-xs leading-5 font-normal text-gray-500">
+            <p
+              className={`mt-0.5 text-xs leading-5 font-normal ${
+                isOpen ? toneClasses.openDescription : "text-gray-500"
+              }`}
+            >
               {description}
             </p>
           ) : null}
         </div>
-        <span className="rounded-[10px] border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-500">
+        <span
+          className={`rounded-[10px] border px-2 py-1 text-[11px] ${
+            isOpen
+              ? toneClasses.openBadge
+              : "border-[#e7e7eb] bg-white text-gray-500"
+          }`}
+        >
           {count} รายการ
         </span>
       </summary>
@@ -459,7 +561,7 @@ function CollapsibleGroupSection({
         {bills.length > 0 ? (
           bills.map((bill) => <BillCard key={bill.id} bill={bill} />)
         ) : (
-          <div className="rounded-[18px] bg-gray-50 px-3 py-4 text-xs text-gray-500">
+          <div className="rounded-[18px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
             {emptyMessage}
           </div>
         )}
@@ -629,7 +731,7 @@ export default function DashboardPage() {
           .map((row: HistoryItem, index: number) =>
             normalizeBill(row, index, memberMap, billNameMap, paymentTotals),
           )
-          .filter((bill: DashboardBill) => bill.totalAmount > 0)
+          .filter((bill: DashboardBill) => bill.totalAmount !== 0)
           .sort(
             (a: DashboardBill, b: DashboardBill) =>
               (parseSheetDate(b.date)?.getTime() || 0) -
@@ -664,6 +766,7 @@ export default function DashboardPage() {
 
   const today = new Date();
   const keyword = deferredSearchTerm.trim().toLowerCase();
+  const shouldExpandHistory = keyword.length > 0;
   const visibleBills = historyBills.filter((bill) => {
     if (shouldExcludeBill(bill)) {
       return false;
@@ -679,23 +782,29 @@ export default function DashboardPage() {
   const todayBills = visibleBills.filter(
     (bill) => isSameDay(bill.date, today) || bill.taskStatus === "รอติดตั้ง",
   );
-  const waitingBills = visibleBills.filter(
+  const sortedTodayBills = [...todayBills].sort(compareTodayBills);
+  const installBills = visibleBills.filter(
     (bill) =>
-      !isSameDay(bill.date, today) &&
-      WAITING_TASK_STATUSES.has(bill.taskStatus),
+      isSameDay(bill.date, today) || bill.taskStatus === "ค้างเบิก",
   );
-  const paymentPendingBills = visibleBills.filter(
-    (bill) => bill.remainingAmount > 0,
+  const orderBills = visibleBills.filter(
+    (bill) => bill.taskStatus === "สั่งของ",
+  );
+  const storeBills = visibleBills.filter(
+    (bill) => bill.taskStatus === "เครดิต" || bill.taskStatus === "เงินสด",
+  );
+  const paymentDueBills = visibleBills.filter(
+    (bill) =>
+      bill.billStatus === "ผ่อนชำระ" && bill.paymentStatus !== "จ่ายแล้ว",
   );
   const historyBillsOnly = visibleBills.filter(
     (bill) => !todayBills.some((todayBill) => todayBill.id === bill.id),
   );
   const activeBills = Array.from(
     new Map(
-      [...todayBills, ...waitingBills, ...paymentPendingBills].map((bill) => [
-        bill.id,
-        bill,
-      ]),
+      [...todayBills, ...installBills, ...orderBills, ...paymentDueBills].map(
+        (bill) => [bill.id, bill],
+      ),
     ).values(),
   );
 
@@ -734,26 +843,33 @@ export default function DashboardPage() {
       bill.taskStatus === "รอติดตั้ง" ? sum + bill.remainingAmount : sum,
     0,
   );
-  const todayJobsTotalAmount = todayBills.reduce(
+  const todayJobsTotalAmount = sortedTodayBills.reduce(
     (sum, bill) => sum + bill.totalAmount,
     0,
   );
-  const todayJobsCount = todayBills.length;
+  const todayJobsCount = sortedTodayBills.length;
   const pendingBills = Array.from(
     new Map(
-      [...waitingBills, ...paymentPendingBills].map((bill) => [bill.id, bill]),
+      [...storeBills, ...orderBills, ...paymentDueBills].map((bill) => [
+        bill.id,
+        bill,
+      ]),
     ).values(),
   );
-  const waitingBillsRemainingAmount = waitingBills.reduce(
+  const installBillsRemainingAmount = installBills.reduce(
     (sum, bill) => sum + bill.remainingAmount,
     0,
   );
-  const paymentPendingRemainingAmount = paymentPendingBills.reduce(
+  const orderBillsRemainingAmount = orderBills.reduce(
     (sum, bill) => sum + bill.remainingAmount,
     0,
   );
-  const pendingBillsTotalAmount = pendingBills.reduce(
-    (sum, bill) => sum + bill.totalAmount,
+  const storeBillsRemainingAmount = storeBills.reduce(
+    (sum, bill) => sum + bill.remainingAmount,
+    0,
+  );
+  const paymentDueRemainingAmount = paymentDueBills.reduce(
+    (sum, bill) => sum + bill.remainingAmount,
     0,
   );
   const pendingJobs = pendingBills.length;
@@ -798,7 +914,7 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
       <section className="relative border-b border-gray-100/80 bg-transparent">
         <div className="mx-auto max-w-5xl px-3 pt-3 pb-3 sm:px-4">
-          <div className="rounded-[22px] border border-gray-100 bg-white p-3 shadow-sm">
+          <div className="rounded-[22px] border border-[#ececf0] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -809,7 +925,7 @@ export default function DashboardPage() {
                 </h1>
               </div>
 
-              <div className="shrink-0 rounded-[18px] border border-gray-100 bg-white px-2 py-1.5">
+              <div className="shrink-0 rounded-[18px] border border-[#ececf0] bg-white px-2 py-1.5">
                 <UserProfile
                   pictureUrl={user.pictureUrl}
                   displayName={employee?.nickname || user.displayName}
@@ -819,7 +935,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <label className="mt-3 flex items-center gap-2 rounded-[18px] border border-gray-100 bg-[#F9F9FA] px-3 py-2 text-xs text-gray-600">
+            <label className="mt-3 flex items-center gap-2 rounded-[18px] border border-[#e6e6ea] bg-[#F7F7F8] px-3 py-2 text-xs text-gray-600">
               <HiMagnifyingGlass className="h-4 w-4 text-gray-400" />
               <input
                 value={searchTerm}
@@ -827,6 +943,16 @@ export default function DashboardPage() {
                 placeholder="ค้นหาป้ายทะเบียน รายละเอียด หรือเลขบิล"
                 className="w-full bg-transparent outline-none placeholder:text-gray-400"
               />
+              {searchTerm ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+                  aria-label="ล้างคำค้น"
+                >
+                  <HiMiniXMark className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
             </label>
           </div>
         </div>
@@ -834,25 +960,23 @@ export default function DashboardPage() {
 
       <section className="relative mx-auto max-w-5xl px-3 py-3 sm:px-4">
         {loadingBills ? (
-          <div className="flex min-h-[240px] items-center justify-center rounded-[22px] border border-gray-100 bg-white">
+          <div className="flex min-h-[240px] items-center justify-center rounded-[22px] border border-[#ececf0] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
             <Loader />
           </div>
         ) : (
           <div className="space-y-3">
             <div className="space-y-2">
-              <div className="rounded-[18px] border border-gray-100 bg-white px-3 py-2.5 shadow-sm">
-                <p className="text-md mt-1 font-medium text-gray-700">
-                  {formatDayTitle(today)}
-                </p>
-              </div>
-              <article className="rounded-[18px] border border-gray-100 bg-white p-3 shadow-sm">
+              <p className="my-0 mt-1 px-4 py-0 text-right text-lg font-medium text-gray-700">
+                {formatDayTitle(today)}
+              </p>
+              <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-700">
                     ยอดเงินที่รับชำระวันนี้
                   </p>
-                  <HiBanknotes className="h-4 w-4 text-green-700" />
+                  <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-gray-900">
+                <p className="mt-2 text-2xl font-semibold text-[#2f6b45]">
                   {formatCurrency(todayReceivedAmount)}
                 </p>
                 <p className="mt-1 text-xs text-gray-600">
@@ -862,29 +986,55 @@ export default function DashboardPage() {
               </article>
 
               <div className="grid grid-cols-2 gap-2">
-                <article className="rounded-[18px] border border-gray-100 bg-white p-3 shadow-sm">
+                <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">งานวันนี้</p>
-                    <HiCalendarDays className="h-4 w-4 text-blue-700" />
+                    <p className="text-xs text-gray-700">งานวันนี้</p>
+                    <HiCalendarDays className="h-4 w-4 text-[#4f6893]" />
                   </div>
-                  <p className="mt-2 text-2xl font-semibold text-gray-900">
-                    {todayJobsCount} คัน
+                  <p className="mt-2 text-2xl font-semibold text-[#4f6893]">
+                    {todayJobsCount} บิล
                   </p>
                   <p className="mt-1 text-xs text-gray-600">
                     (ยอดบิล) : {formatCurrency(todayJobsTotalAmount)}
                   </p>
                 </article>
 
-                <article className="rounded-[18px] border border-[#E9E9E9] bg-[#F7F7F7] p-3 shadow-sm">
+                <article className="rounded-[18px] border border-[#e7e7eb] bg-[#F7F7F8] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">งานค้าง</p>
-                    <HiMiniClock className="h-4 w-4 text-gray-700" />
+                    <p className="text-xs text-gray-700">ค่าใช้จ่าย</p>
+                    <HiMiniClock className="h-4 w-4 text-[#a35d33]" />
                   </div>
-                  <p className="mt-2 text-2xl font-semibold text-gray-900">
-                    {pendingJobs} คัน
+                  <p className="mt-2 text-2xl font-semibold text-[#a35d33]">
+                    {installBills.length} บิล
                   </p>
                   <p className="mt-1 text-xs text-gray-600">
-                    (คงค้าง) : {formatCurrency(pendingBillsTotalAmount)}
+                    (คงค้าง) : {formatCurrency(installBillsRemainingAmount)}
+                  </p>
+                </article>
+
+                <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-700">สั่งของ</p>
+                    <HiMiniClock className="h-4 w-4 text-[#8b6a24]" />
+                  </div>
+                  <p className="mt-2 text-2xl font-semibold text-[#8b6a24]">
+                    {orderBills.length} บิล
+                  </p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    (คงค้าง) : {formatCurrency(orderBillsRemainingAmount)}
+                  </p>
+                </article>
+
+                <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-700">ค้างชำระ</p>
+                    <HiMiniClock className="h-4 w-4 text-[#6558a8]" />
+                  </div>
+                  <p className="mt-2 text-2xl font-semibold text-[#6558a8]">
+                    {paymentDueBills.length} บิล
+                  </p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    (คงค้าง) : {formatCurrency(paymentDueRemainingAmount)}
                   </p>
                 </article>
               </div>
@@ -893,49 +1043,61 @@ export default function DashboardPage() {
             <GroupSection
               eyebrow="Today"
               title="งานวันนี้"
-              count={todayBills.length}
-              bills={todayBills}
+              count={sortedTodayBills.length}
+              bills={sortedTodayBills}
               emptyMessage="วันนี้ยังไม่มีรายการที่ตรงกับคำค้น"
             />
 
-            <section className="rounded-[18px] border border-gray-100 bg-white p-3 shadow-sm">
+            <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
                     Pending Groups
                   </p>
                   <h2 className="mt-1 text-base font-semibold text-gray-900">
-                    งานค้าง
+                    จัดการงาน
                   </h2>
                 </div>
-                <span className="rounded-[10px] bg-gray-50 px-2 py-1 text-[11px] text-gray-600">
+                <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
                   {pendingJobs} รายการ
                 </span>
               </div>
 
               <div className="mt-3 space-y-2">
                 <CollapsibleGroupSection
-                  eyebrow="Waiting"
-                  title="▼ รอติดตั้ง, สั่งของ"
-                  description={`ยอดคงค้างรวม ${formatCurrency(waitingBillsRemainingAmount)}`}
-                  count={waitingBills.length}
-                  bills={waitingBills}
-                  emptyMessage="ไม่มีงานค้างในกลุ่ม Waiting"
+                  eyebrow="Order"
+                  title="▼ สั่งของ"
+                  description={`ยอดคงค้างรวม ${formatCurrency(orderBillsRemainingAmount)}`}
+                  count={orderBills.length}
+                  bills={orderBills}
+                  emptyMessage="ไม่มีรายการสั่งของ"
                   defaultOpen
+                  tone="order"
                 />
 
                 <CollapsibleGroupSection
-                  eyebrow="Payment Pending"
-                  title="▼ รอชําระ, ผ่อนชำระ"
-                  description={`ยอดคงค้างรวม ${formatCurrency(paymentPendingRemainingAmount)}`}
-                  count={paymentPendingBills.length}
-                  bills={paymentPendingBills}
-                  emptyMessage="ไม่มีรายการในกลุ่ม Payment Pending"
+                  eyebrow="Payment Due"
+                  title="▼ ค้างชำระ"
+                  description={`ยอดคงค้างรวม ${formatCurrency(paymentDueRemainingAmount)}`}
+                  count={paymentDueBills.length}
+                  bills={paymentDueBills}
+                  emptyMessage="ไม่มีรายการค้างชำระ"
+                  tone="paymentDue"
+                />
+
+                <CollapsibleGroupSection
+                  eyebrow="Store"
+                  title="▼ ร้านค้า"
+                  description={`ยอดคงค้างรวม ${formatCurrency(storeBillsRemainingAmount)}`}
+                  count={storeBills.length}
+                  bills={storeBills}
+                  emptyMessage="ไม่มีรายการร้านค้า"
+                  tone="store"
                 />
               </div>
             </section>
 
-            <section className="rounded-[18px] border border-gray-100 bg-white p-3 shadow-sm">
+            <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -948,7 +1110,7 @@ export default function DashboardPage() {
                     สำหรับค้นหาย้อนหลัง โดยจัดกลุ่มตามเดือนและวันที่
                   </p>
                 </div>
-                <span className="rounded-[10px] bg-gray-50 px-2 py-1 text-[11px] text-gray-600">
+                <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
                   {historyBillsOnly.length} รายการ
                 </span>
               </div>
@@ -958,23 +1120,29 @@ export default function DashboardPage() {
                   historyByMonth.map((monthGroup) => (
                     <details
                       key={monthGroup.monthLabel}
-                      className="rounded-[18px] border border-gray-100 bg-white"
+                      open={shouldExpandHistory}
+                      className="rounded-[18px] border border-[#ececf0] bg-white"
                     >
                       <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-gray-900">
                         {monthGroup.monthLabel}
                       </summary>
-                      <div className="space-y-2 border-t border-gray-100 px-2 py-2">
+                      <div className="space-y-2 border-t border-[#f0f1f4] px-2 py-2">
                         {monthGroup.dates.map((dateGroup) => (
                           <details
                             key={`${monthGroup.monthLabel}-${dateGroup.dateLabel}`}
-                            className="rounded-[18px] bg-gray-50"
+                            open={shouldExpandHistory}
+                            className="rounded-[18px] bg-[#f7f7f8]"
                           >
                             <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-gray-700">
                               {dateGroup.dateLabel} ({dateGroup.bills.length})
                             </summary>
                             <div className="space-y-2 px-2 pb-2">
                               {dateGroup.bills.map((bill) => (
-                                <BillCard key={bill.id} bill={bill} />
+                                <BillCard
+                                  key={bill.id}
+                                  bill={bill}
+                                  defaultOpen={shouldExpandHistory}
+                                />
                               ))}
                             </div>
                           </details>
