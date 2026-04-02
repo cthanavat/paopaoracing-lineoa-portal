@@ -94,9 +94,9 @@ export function useAppData() {
             );
             if (userMember) {
               setMember(userMember);
-              if (user.userRole === "admin" && firstLoad) {
+              if (user.userRole === "admin" && firstLoad && pathname === "/") {
                 setFirstLoad(false);
-                router.push("/attendance");
+                router.push("/dashboard");
               }
             }
           }
@@ -181,9 +181,9 @@ export function useAppData() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
 
-            if (firstLoad && pathname !== "/attendance") {
+            if (firstLoad && pathname === "/") {
               setFirstLoad(false);
-              router.push("/attendance");
+              router.push("/dashboard");
             }
           }
           return;
@@ -207,9 +207,9 @@ export function useAppData() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
 
-            if (firstLoad && pathname !== "/attendance") {
+            if (firstLoad && pathname === "/") {
               setFirstLoad(false);
-              router.push("/attendance");
+              router.push("/dashboard");
             }
           }
         }
