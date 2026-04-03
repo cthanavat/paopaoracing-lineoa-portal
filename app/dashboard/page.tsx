@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useDeferredValue, useRef, useState } from "react";
+import { memo, useEffect, useDeferredValue, useMemo, useRef, useState } from "react";
 import {
   HiArrowUp,
   HiBanknotes,
@@ -364,7 +364,7 @@ function getSectionTone(tone: "install" | "order" | "paymentDue" | "store") {
   };
 }
 
-function StatusPill({ value }: { value: string }) {
+const StatusPill = memo(function StatusPill({ value }: { value: string }) {
   return (
     <div
       className={`rounded-[10px] border px-2 py-1 text-[11px] font-medium ${getStatusTone(value)}`}
@@ -372,9 +372,9 @@ function StatusPill({ value }: { value: string }) {
       {value}
     </div>
   );
-}
+});
 
-function BillCard({
+const BillCard = memo(function BillCard({
   bill,
   tone = "default",
   defaultOpen = false,
@@ -433,9 +433,9 @@ function BillCard({
       </div>
     </details>
   );
-}
+});
 
-function GroupSection({
+const GroupSection = memo(function GroupSection({
   eyebrow,
   title,
   description,
@@ -443,6 +443,8 @@ function GroupSection({
   bills,
   emptyMessage,
   tone = "default",
+  expandAllBills = false,
+  onToggleExpandAllBills,
 }: {
   eyebrow: string;
   title: string;
@@ -451,6 +453,8 @@ function GroupSection({
   bills: DashboardBill[];
   emptyMessage: string;
   tone?: "default" | "accent";
+  expandAllBills?: boolean;
+  onToggleExpandAllBills?: () => void;
 }) {
   return (
     <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
@@ -468,15 +472,31 @@ function GroupSection({
             </p>
           ) : null}
         </div>
-        <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
-          {count} รายการ
-        </span>
+        <div className="flex items-center gap-2">
+          {onToggleExpandAllBills ? (
+            <button
+              type="button"
+              onClick={onToggleExpandAllBills}
+              className="rounded-[10px] border border-[#d9e4f4] bg-[#f4f8fd] px-2 py-1 text-[11px] font-medium text-[#486da8] transition hover:border-[#c7d8ef] hover:bg-[#eaf2fc] hover:text-[#355987]"
+            >
+              {count} รายการ
+            </button>
+          ) : null}
+          {!onToggleExpandAllBills ? (
+            <span className="text-[11px] text-gray-600">{count} รายการ</span>
+          ) : null}
+        </div>
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-3 space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
         {bills.length > 0 ? (
           bills.map((bill) => (
-            <BillCard key={bill.id} bill={bill} tone={tone} />
+            <BillCard
+              key={`${bill.id}-${expandAllBills ? "open" : "closed"}`}
+              bill={bill}
+              tone={tone}
+              defaultOpen={expandAllBills}
+            />
           ))
         ) : (
           <div className="rounded-[18px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
@@ -486,9 +506,9 @@ function GroupSection({
       </div>
     </section>
   );
-}
+});
 
-function CollapsibleGroupSection({
+const CollapsibleGroupSection = memo(function CollapsibleGroupSection({
   eyebrow,
   title,
   description,
@@ -498,6 +518,8 @@ function CollapsibleGroupSection({
   open,
   onOpenChange,
   tone,
+  expandAllBills = false,
+  onToggleExpandAllBills,
 }: {
   eyebrow: string;
   title: string;
@@ -508,19 +530,29 @@ function CollapsibleGroupSection({
   open: boolean;
   onOpenChange: (isOpen: boolean) => void;
   tone: "install" | "order" | "paymentDue" | "store";
+  expandAllBills?: boolean;
+  onToggleExpandAllBills?: () => void;
 }) {
   const toneClasses = getSectionTone(tone);
+  const openBackgroundClass =
+    tone === "order"
+      ? "bg-[#eef4fb]"
+      : tone === "paymentDue"
+        ? "bg-[#f5f1ff]"
+        : tone === "store"
+          ? "bg-[#f2f5f8]"
+          : "bg-[#fcf2ed]";
 
   return (
     <details
       open={open}
-      className="rounded-[18px] border border-[#ececf0] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
+      className={`rounded-[18px] pb-2 ${
+        open ? openBackgroundClass : "bg-white"
+      }`}
       onToggle={(event) => onOpenChange(event.currentTarget.open)}
     >
       <summary
-        className={`flex cursor-pointer list-none items-start justify-between gap-3 rounded-[18px] border px-3 py-2 transition-colors ${
-          open ? toneClasses.openSummary : "border-transparent bg-[#fcfcfd]"
-        }`}
+        className="flex cursor-pointer list-none items-start justify-between gap-3 border-b border-[#ececf0] px-3 py-2.5"
       >
         <div>
           <p
@@ -539,7 +571,7 @@ function CollapsibleGroupSection({
           </h3>
           {description ? (
             <p
-              className={`mt-0.5 text-xs leading-5 font-normal ${
+              className={`mt-1 text-xs leading-5 font-normal ${
                 open ? toneClasses.openDescription : "text-gray-500"
               }`}
             >
@@ -547,20 +579,49 @@ function CollapsibleGroupSection({
             </p>
           ) : null}
         </div>
-        <span
-          className={`rounded-[10px] border px-2 py-1 text-[11px] ${
-            open
-              ? toneClasses.openBadge
-              : "border-[#e7e7eb] bg-white text-gray-500"
-          }`}
-        >
-          {count} รายการ
-        </span>
+        <div className="flex items-center gap-2">
+          {onToggleExpandAllBills ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggleExpandAllBills();
+              }}
+              className={`inline-flex items-center justify-center rounded-[10px] border px-2.5 py-1 text-[11px] font-medium whitespace-nowrap shadow-sm transition ${
+                open
+                  ? "border-white/80 bg-white text-gray-700"
+                  : "border-[#d9e4f4] bg-[#f4f8fd] text-[#486da8]"
+              }`}
+            >
+              {count} รายการ
+            </button>
+          ) : null}
+          {!onToggleExpandAllBills ? (
+            <span
+              className={`pt-0.5 text-[11px] font-medium whitespace-nowrap ${
+                open ? toneClasses.openTitle : "text-gray-500"
+              }`}
+            >
+              {count} รายการ
+            </span>
+          ) : null}
+        </div>
       </summary>
 
-      <div className="space-y-2 bg-white px-0 pt-1 pb-1">
+      <div
+        className={`space-y-2 px-2 pt-2 pb-1 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0 ${
+          open ? "bg-transparent" : "bg-white"
+        }`}
+      >
         {bills.length > 0 ? (
-          bills.map((bill) => <BillCard key={bill.id} bill={bill} />)
+          bills.map((bill) => (
+            <BillCard
+              key={`${bill.id}-${expandAllBills ? "open" : "closed"}`}
+              bill={bill}
+              defaultOpen={expandAllBills}
+            />
+          ))
         ) : (
           <div className="rounded-[18px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
             {emptyMessage}
@@ -569,7 +630,7 @@ function CollapsibleGroupSection({
       </div>
     </details>
   );
-}
+});
 
 export default function DashboardPage() {
   const { error: liffError } = useLiff();
@@ -595,10 +656,19 @@ export default function DashboardPage() {
   const [todayReceivedAmount, setTodayReceivedAmount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [activePendingGroup, setActivePendingGroup] = useState<
-    "order" | "paymentDue" | "store" | null
-  >(null);
+  const [openPendingGroups, setOpenPendingGroups] = useState({
+    order: false,
+    paymentDue: false,
+    store: false,
+  });
+  const [expandTodayBills, setExpandTodayBills] = useState(false);
+  const [expandPendingBills, setExpandPendingBills] = useState({
+    order: false,
+    paymentDue: false,
+    store: false,
+  });
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const [today] = useState(() => new Date());
   const todaySectionRef = useRef<HTMLElement | null>(null);
   const orderSectionRef = useRef<HTMLDivElement | null>(null);
   const paymentDueSectionRef = useRef<HTMLDivElement | null>(null);
@@ -630,7 +700,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 520);
+      setShowBackToTop(window.scrollY > 260);
     };
 
     handleScroll();
@@ -771,126 +841,172 @@ export default function DashboardPage() {
     };
   }, [config, isAdmin, isLiffReady, memberAll, user]);
 
-  const today = new Date();
   const keyword = deferredSearchTerm.trim().toLowerCase();
   const shouldExpandHistory = keyword.length > 0;
-  const visibleBills = historyBills.filter((bill) => {
-    if (shouldExcludeBill(bill)) {
-      return false;
-    }
+  const visibleBills = useMemo(
+    () =>
+      historyBills.filter((bill) => {
+        if (shouldExcludeBill(bill)) {
+          return false;
+        }
 
-    if (!keyword) return true;
-    return [bill.customer, bill.plate, bill.detail, bill.id]
-      .join(" ")
-      .toLowerCase()
-      .includes(keyword);
-  });
+        if (!keyword) return true;
+        return [bill.customer, bill.plate, bill.detail, bill.id]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword);
+      }),
+    [historyBills, keyword],
+  );
 
-  const todayBills = visibleBills.filter(
-    (bill) => isSameDay(bill.date, today) || bill.taskStatus === "รอติดตั้ง",
-  );
-  const sortedTodayBills = [...todayBills].sort(compareTodayBills);
-  const installBills = visibleBills.filter(
-    (bill) =>
-      isSameDay(bill.date, today) || bill.taskStatus === "ค้างเบิก",
-  );
-  const orderBills = visibleBills.filter(
-    (bill) => bill.taskStatus === "สั่งของ",
-  );
-  const storeBills = visibleBills.filter(
-    (bill) => bill.taskStatus === "เครดิต" || bill.taskStatus === "เงินสด",
-  );
-  const paymentDueBills = visibleBills.filter(
-    (bill) =>
-      bill.billStatus === "ผ่อนชำระ" && bill.paymentStatus !== "จ่ายแล้ว",
-  );
-  const historyBillsOnly = visibleBills.filter(
-    (bill) => !todayBills.some((todayBill) => todayBill.id === bill.id),
-  );
-  const activeBills = Array.from(
-    new Map(
-      [...todayBills, ...installBills, ...orderBills, ...paymentDueBills].map(
-        (bill) => [bill.id, bill],
+  const todayBills = useMemo(
+    () =>
+      visibleBills.filter(
+        (bill) => isSameDay(bill.date, today) || bill.taskStatus === "รอติดตั้ง",
       ),
-    ).values(),
+    [visibleBills, today],
+  );
+  const sortedTodayBills = useMemo(
+    () => [...todayBills].sort(compareTodayBills),
+    [todayBills],
+  );
+  const installBills = useMemo(
+    () =>
+      visibleBills.filter(
+        (bill) => isSameDay(bill.date, today) || bill.taskStatus === "ค้างเบิก",
+      ),
+    [visibleBills, today],
+  );
+  const orderBills = useMemo(
+    () => visibleBills.filter((bill) => bill.taskStatus === "สั่งของ"),
+    [visibleBills],
+  );
+  const storeBills = useMemo(
+    () =>
+      visibleBills.filter(
+        (bill) => bill.taskStatus === "เครดิต" || bill.taskStatus === "เงินสด",
+      ),
+    [visibleBills],
+  );
+  const paymentDueBills = useMemo(
+    () =>
+      visibleBills.filter(
+        (bill) =>
+          bill.billStatus === "ผ่อนชำระ" && bill.paymentStatus !== "จ่ายแล้ว",
+      ),
+    [visibleBills],
+  );
+  const historyBillsOnly = useMemo(
+    () =>
+      visibleBills.filter(
+        (bill) => !todayBills.some((todayBill) => todayBill.id === bill.id),
+      ),
+    [visibleBills, todayBills],
+  );
+  const activeBills = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          [...todayBills, ...installBills, ...orderBills, ...paymentDueBills].map(
+            (bill) => [bill.id, bill],
+          ),
+        ).values(),
+      ),
+    [todayBills, installBills, orderBills, paymentDueBills],
   );
 
-  const historyByMonth = historyBillsOnly.reduce<
+  const historyByMonth = useMemo(
+    () =>
+      historyBillsOnly.reduce<
     Array<{
       monthLabel: string;
       dates: Array<{ dateLabel: string; bills: DashboardBill[] }>;
     }>
   >((groups, bill) => {
-    const monthLabel = formatMonthYear(bill.date);
-    const dateLabel = formatDate(bill.date);
-    const monthGroup = groups.find((group) => group.monthLabel === monthLabel);
+        const monthLabel = formatMonthYear(bill.date);
+        const dateLabel = formatDate(bill.date);
+        const monthGroup = groups.find((group) => group.monthLabel === monthLabel);
 
-    if (!monthGroup) {
-      groups.push({
-        monthLabel,
-        dates: [{ dateLabel, bills: [bill] }],
-      });
-      return groups;
-    }
+        if (!monthGroup) {
+          groups.push({
+            monthLabel,
+            dates: [{ dateLabel, bills: [bill] }],
+          });
+          return groups;
+        }
 
-    const dateGroup = monthGroup.dates.find(
-      (group) => group.dateLabel === dateLabel,
-    );
-    if (!dateGroup) {
-      monthGroup.dates.push({ dateLabel, bills: [bill] });
-      return groups;
-    }
+        const dateGroup = monthGroup.dates.find(
+          (group) => group.dateLabel === dateLabel,
+        );
+        if (!dateGroup) {
+          monthGroup.dates.push({ dateLabel, bills: [bill] });
+          return groups;
+        }
 
-    dateGroup.bills.push(bill);
-    return groups;
-  }, []);
-
-  const waitingInstallRemainingAmount = activeBills.reduce(
-    (sum, bill) =>
-      bill.taskStatus === "รอติดตั้ง" ? sum + bill.remainingAmount : sum,
-    0,
+        dateGroup.bills.push(bill);
+        return groups;
+      }, []),
+    [historyBillsOnly],
   );
-  const todayJobsTotalAmount = sortedTodayBills.reduce(
-    (sum, bill) => sum + bill.totalAmount,
-    0,
+
+  const waitingInstallRemainingAmount = useMemo(
+    () =>
+      activeBills.reduce(
+        (sum, bill) =>
+          bill.taskStatus === "รอติดตั้ง" ? sum + bill.remainingAmount : sum,
+        0,
+      ),
+    [activeBills],
+  );
+  const todayJobsTotalAmount = useMemo(
+    () => sortedTodayBills.reduce((sum, bill) => sum + bill.totalAmount, 0),
+    [sortedTodayBills],
   );
   const todayJobsCount = sortedTodayBills.length;
-  const pendingBills = Array.from(
-    new Map(
-      [...storeBills, ...orderBills, ...paymentDueBills].map((bill) => [
-        bill.id,
-        bill,
-      ]),
-    ).values(),
+  const pendingBills = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          [...storeBills, ...orderBills, ...paymentDueBills].map((bill) => [
+            bill.id,
+            bill,
+          ]),
+        ).values(),
+      ),
+    [storeBills, orderBills, paymentDueBills],
   );
-  const installBillsRemainingAmount = installBills.reduce(
-    (sum, bill) => sum + bill.remainingAmount,
-    0,
+  const installBillsRemainingAmount = useMemo(
+    () => installBills.reduce((sum, bill) => sum + bill.remainingAmount, 0),
+    [installBills],
   );
-  const orderBillsRemainingAmount = orderBills.reduce(
-    (sum, bill) => sum + bill.remainingAmount,
-    0,
+  const orderBillsRemainingAmount = useMemo(
+    () => orderBills.reduce((sum, bill) => sum + bill.remainingAmount, 0),
+    [orderBills],
   );
-  const storeBillsRemainingAmount = storeBills.reduce(
-    (sum, bill) => sum + bill.remainingAmount,
-    0,
+  const storeBillsRemainingAmount = useMemo(
+    () => storeBills.reduce((sum, bill) => sum + bill.remainingAmount, 0),
+    [storeBills],
   );
-  const paymentDueRemainingAmount = paymentDueBills.reduce(
-    (sum, bill) => sum + bill.remainingAmount,
-    0,
+  const paymentDueRemainingAmount = useMemo(
+    () => paymentDueBills.reduce((sum, bill) => sum + bill.remainingAmount, 0),
+    [paymentDueBills],
   );
   const pendingJobs = pendingBills.length;
+  const isAllPendingGroupsOpen =
+    openPendingGroups.order &&
+    openPendingGroups.paymentDue &&
+    openPendingGroups.store;
 
   const scrollToSection = (
-    ref:
-      | { current: HTMLElement | null }
-      | { current: HTMLDivElement | null },
+    ref: { current: HTMLElement | null } | { current: HTMLDivElement | null },
     pendingGroup?: "order" | "paymentDue" | "store",
   ) => {
     if (pendingGroup) {
-      setActivePendingGroup(pendingGroup);
-    } else {
-      setActivePendingGroup(null);
+      setOpenPendingGroups({
+        order: pendingGroup === "order",
+        paymentDue: pendingGroup === "paymentDue",
+        store: pendingGroup === "store",
+      });
     }
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -934,8 +1050,8 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-[#F9F9FA] pb-24 text-gray-900">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
       <section className="relative border-b border-gray-100/80 bg-transparent">
-        <div className="mx-auto max-w-5xl px-3 pt-3 pb-3 sm:px-4">
-          <div className="rounded-[22px] border border-[#ececf0] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+        <div className="mx-auto max-w-7xl px-3 pt-3 pb-3 sm:px-4">
+          <div className="rounded-[22px] border border-[#ececf0] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)] lg:p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -956,7 +1072,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <label className="mt-3 flex items-center gap-2 rounded-[18px] border border-[#e6e6ea] bg-[#F7F7F8] px-3 py-2 text-xs text-gray-600">
+            <label className="mt-3 flex items-center gap-2 rounded-[18px] border border-[#e6e6ea] bg-[#F7F7F8] px-3 py-2 text-xs text-gray-600 lg:mt-4 lg:max-w-xl">
               <HiMagnifyingGlass className="h-4 w-4 text-gray-400" />
               <input
                 value={searchTerm}
@@ -979,240 +1095,336 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-5xl px-3 py-3 sm:px-4">
+      <section className="relative mx-auto max-w-7xl px-3 py-3 sm:px-4 lg:py-4">
         {loadingBills ? (
           <div className="flex min-h-[240px] items-center justify-center rounded-[22px] border border-[#ececf0] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
             <Loader />
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <p className="my-0 mt-1 px-4 py-0 text-right text-lg font-medium text-gray-700">
+          <div className="space-y-3 lg:space-y-4">
+            <section className="space-y-2">
+              <p className="my-0 mt-1 px-4 py-0 text-right text-lg font-medium text-gray-700 lg:px-0 lg:text-left">
                 {formatDayTitle(today)}
               </p>
-              <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+              <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)] lg:p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-700">
                     ยอดเงินที่รับชำระวันนี้
                   </p>
                   <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-[#2f6b45]">
+                <p className="mt-2 text-2xl font-semibold text-[#2f6b45] lg:text-[2rem]">
                   {formatCurrency(todayReceivedAmount)}
                 </p>
                 <p className="mt-1 text-xs text-gray-600">
-                  ยอดรอติดตั้ง :{" "}
-                  {formatCurrency(waitingInstallRemainingAmount)}{" "}
+                  ยอดรอติดตั้ง : {formatCurrency(waitingInstallRemainingAmount)}
                 </p>
               </article>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => scrollToSection(todaySectionRef)}
-                  className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfe2e8] hover:bg-[#fcfcfd]"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-700">งานวันนี้</p>
-                    <HiCalendarDays className="h-4 w-4 text-[#4f6893]" />
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold text-[#4f6893]">
-                    {todayJobsCount} บิล
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    (ยอดบิล) : {formatCurrency(todayJobsTotalAmount)}
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => scrollToSection(todaySectionRef)}
-                  className="rounded-[18px] border border-[#e7e7eb] bg-[#F7F7F8] p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#ddd6cf] hover:bg-[#faf6f2]"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-700">ค่าใช้จ่าย</p>
-                    <HiMiniClock className="h-4 w-4 text-[#a35d33]" />
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold text-[#a35d33]">
-                    {installBills.length} บิล
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    (คงค้าง) : {formatCurrency(installBillsRemainingAmount)}
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => scrollToSection(orderSectionRef, "order")}
-                  className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#e0dfd7] hover:bg-[#fefcf7]"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-700">สั่งของ</p>
-                    <HiMiniClock className="h-4 w-4 text-[#8b6a24]" />
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold text-[#8b6a24]">
-                    {orderBills.length} บิล
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    (คงค้าง) : {formatCurrency(orderBillsRemainingAmount)}
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    scrollToSection(paymentDueSectionRef, "paymentDue")
-                  }
-                  className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfdbef] hover:bg-[#faf8ff]"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-700">ค้างชำระ</p>
-                    <HiMiniClock className="h-4 w-4 text-[#6558a8]" />
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold text-[#6558a8]">
-                    {paymentDueBills.length} บิล
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    (คงค้าง) : {formatCurrency(paymentDueRemainingAmount)}
-                  </p>
-                </button>
-              </div>
-            </div>
-
-            <section ref={todaySectionRef}>
-              <GroupSection
-                eyebrow="Today"
-                title="งานวันนี้"
-                count={sortedTodayBills.length}
-                bills={sortedTodayBills}
-                emptyMessage="วันนี้ยังไม่มีรายการที่ตรงกับคำค้น"
-              />
             </section>
 
-            <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
-                    Pending Groups
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-gray-900">
-                    จัดการงาน
-                  </h2>
+            <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <button
+                type="button"
+                onClick={() => scrollToSection(todaySectionRef)}
+                className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfe2e8] hover:bg-[#fcfcfd] lg:min-h-[148px] lg:p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-700">งานวันนี้</p>
+                  <HiCalendarDays className="h-4 w-4 text-[#4f6893]" />
                 </div>
-                <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
-                  {pendingJobs} รายการ
-                </span>
-              </div>
+                <p className="mt-2 text-2xl font-semibold text-[#4f6893]">
+                  {todayJobsCount} บิล
+                </p>
+                <p className="mt-1 text-xs text-gray-600">
+                  (ยอดบิล) : {formatCurrency(todayJobsTotalAmount)}
+                </p>
+              </button>
 
-              <div className="mt-3 space-y-2">
-                <div ref={orderSectionRef}>
-                  <CollapsibleGroupSection
-                    eyebrow="Order"
-                    title="▼ สั่งของ"
-                    description={`ยอดคงค้างรวม ${formatCurrency(orderBillsRemainingAmount)}`}
-                    count={orderBills.length}
-                    bills={orderBills}
-                    emptyMessage="ไม่มีรายการสั่งของ"
-                    open={activePendingGroup === "order"}
-                    onOpenChange={(isOpen) =>
-                      setActivePendingGroup(isOpen ? "order" : null)
-                    }
-                    tone="order"
-                  />
+              <button
+                type="button"
+                onClick={() => scrollToSection(todaySectionRef)}
+                className="rounded-[18px] border border-[#e7e7eb] bg-[#F7F7F8] p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#ddd6cf] hover:bg-[#faf6f2] lg:min-h-[148px] lg:p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-700">ค่าใช้จ่าย</p>
+                  <HiMiniClock className="h-4 w-4 text-[#a35d33]" />
                 </div>
+                <p className="mt-2 text-2xl font-semibold text-[#a35d33]">
+                  {installBills.length} บิล
+                </p>
+                <p className="mt-1 text-xs text-gray-600">
+                  (คงค้าง) : {formatCurrency(installBillsRemainingAmount)}
+                </p>
+              </button>
 
-                <div ref={paymentDueSectionRef}>
-                  <CollapsibleGroupSection
-                    eyebrow="Payment Due"
-                    title="▼ ค้างชำระ"
-                    description={`ยอดคงค้างรวม ${formatCurrency(paymentDueRemainingAmount)}`}
-                    count={paymentDueBills.length}
-                    bills={paymentDueBills}
-                    emptyMessage="ไม่มีรายการค้างชำระ"
-                    open={activePendingGroup === "paymentDue"}
-                    onOpenChange={(isOpen) =>
-                      setActivePendingGroup(isOpen ? "paymentDue" : null)
-                    }
-                    tone="paymentDue"
-                  />
+              <button
+                type="button"
+                onClick={() => scrollToSection(orderSectionRef, "order")}
+                className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#e0dfd7] hover:bg-[#fefcf7] lg:min-h-[148px] lg:p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-700">สั่งของ</p>
+                  <HiMiniClock className="h-4 w-4 text-[#8b6a24]" />
                 </div>
+                <p className="mt-2 text-2xl font-semibold text-[#8b6a24]">
+                  {orderBills.length} บิล
+                </p>
+                <p className="mt-1 text-xs text-gray-600">
+                  (คงค้าง) : {formatCurrency(orderBillsRemainingAmount)}
+                </p>
+              </button>
 
-                <CollapsibleGroupSection
-                  eyebrow="Store"
-                  title="▼ ร้านค้า"
-                  description={`ยอดคงค้างรวม ${formatCurrency(storeBillsRemainingAmount)}`}
-                  count={storeBills.length}
-                  bills={storeBills}
-                  emptyMessage="ไม่มีรายการร้านค้า"
-                  open={activePendingGroup === "store"}
-                  onOpenChange={(isOpen) =>
-                    setActivePendingGroup(isOpen ? "store" : null)
-                  }
-                  tone="store"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  scrollToSection(paymentDueSectionRef, "paymentDue")
+                }
+                className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfdbef] hover:bg-[#faf8ff] lg:min-h-[148px] lg:p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-700">ค้างชำระ</p>
+                  <HiMiniClock className="h-4 w-4 text-[#6558a8]" />
+                </div>
+                <p className="mt-2 text-2xl font-semibold text-[#6558a8]">
+                  {paymentDueBills.length} บิล
+                </p>
+                <p className="mt-1 text-xs text-gray-600">
+                  (คงค้าง) : {formatCurrency(paymentDueRemainingAmount)}
+                </p>
+              </button>
             </section>
 
-            <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
-                    History
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-gray-900">
-                    ประวัติบิล
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-gray-600">
-                    สำหรับค้นหาย้อนหลัง โดยจัดกลุ่มตามเดือนและวันที่
-                  </p>
-                </div>
-                <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
-                  {historyBillsOnly.length} รายการ
-                </span>
-              </div>
+            <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start lg:gap-3">
+              <div className="space-y-3">
+                <section ref={todaySectionRef}>
+                  <GroupSection
+                    eyebrow="Today"
+                    title="งานวันนี้"
+                    count={sortedTodayBills.length}
+                    bills={sortedTodayBills}
+                    emptyMessage="วันนี้ยังไม่มีรายการที่ตรงกับคำค้น"
+                    expandAllBills={expandTodayBills}
+                    onToggleExpandAllBills={() =>
+                      setExpandTodayBills((prev) => !prev)
+                    }
+                  />
+                </section>
 
-              <div className="mt-3 space-y-2">
-                {historyByMonth.length > 0 ? (
-                  historyByMonth.map((monthGroup) => (
-                    <details
-                      key={monthGroup.monthLabel}
-                      open={shouldExpandHistory}
-                      className="rounded-[18px] border border-[#ececf0] bg-white"
+                <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
+                        Pending Groups
+                      </p>
+                      <h2 className="mt-1 text-base font-semibold text-gray-900">
+                        จัดการงาน
+                      </h2>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenPendingGroups({
+                          order: !isAllPendingGroupsOpen,
+                          paymentDue: !isAllPendingGroupsOpen,
+                          store: !isAllPendingGroupsOpen,
+                        })
+                      }
+                      className="inline-flex items-center justify-center rounded-[10px] border border-[#d9e4f4] bg-[#f4f8fd] px-2.5 py-1 text-[11px] font-medium text-[#486da8] shadow-sm transition hover:border-[#c7d8ef] hover:bg-[#eaf2fc] hover:text-[#355987]"
                     >
-                      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-gray-900">
-                        {monthGroup.monthLabel}
-                      </summary>
-                      <div className="space-y-2 border-t border-[#f0f1f4] px-2 py-2">
-                        {monthGroup.dates.map((dateGroup) => (
-                          <details
-                            key={`${monthGroup.monthLabel}-${dateGroup.dateLabel}`}
-                            open={shouldExpandHistory}
-                            className="rounded-[18px] bg-[#f7f7f8]"
-                          >
-                            <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-gray-700">
-                              {dateGroup.dateLabel} ({dateGroup.bills.length})
-                            </summary>
-                            <div className="space-y-2 px-2 pb-2">
-                              {dateGroup.bills.map((bill) => (
-                                <BillCard
-                                  key={bill.id}
-                                  bill={bill}
-                                  defaultOpen={shouldExpandHistory}
-                                />
-                              ))}
-                            </div>
-                          </details>
-                        ))}
-                      </div>
-                    </details>
-                  ))
-                ) : (
-                  <div className="rounded-[18px] bg-gray-50 px-3 py-4 text-xs text-gray-500">
-                    ไม่มีประวัติบิลที่ตรงกับคำค้น
+                      {pendingJobs} รายการ
+                    </button>
                   </div>
-                )}
+
+                  <div className="mt-3 space-y-2">
+                    <div ref={orderSectionRef}>
+                      <CollapsibleGroupSection
+                        eyebrow="Order"
+                        title="▼ สั่งของ"
+                        description={`ยอดคงค้างรวม ${formatCurrency(orderBillsRemainingAmount)}`}
+                        count={orderBills.length}
+                        bills={orderBills}
+                        emptyMessage="ไม่มีรายการสั่งของ"
+                        open={openPendingGroups.order}
+                        onOpenChange={(isOpen) => {
+                          setOpenPendingGroups((prev) => ({
+                            ...prev,
+                            order: isOpen,
+                          }));
+                          if (!isOpen) {
+                            setExpandPendingBills((prev) => ({
+                              ...prev,
+                              order: false,
+                            }));
+                          }
+                        }}
+                        expandAllBills={expandPendingBills.order}
+                        onToggleExpandAllBills={() =>
+                          setOpenPendingGroups((prevOpen) => {
+                            const shouldCollapse =
+                              prevOpen.order && expandPendingBills.order;
+
+                            setExpandPendingBills((prevExpand) => ({
+                              ...prevExpand,
+                              order: shouldCollapse ? false : true,
+                            }));
+
+                            return {
+                              ...prevOpen,
+                              order: shouldCollapse ? false : true,
+                            };
+                          })
+                        }
+                        tone="order"
+                      />
+                    </div>
+
+                    <div ref={paymentDueSectionRef}>
+                      <CollapsibleGroupSection
+                        eyebrow="Payment Due"
+                        title="▼ ค้างชำระ"
+                        description={`ยอดคงค้างรวม ${formatCurrency(paymentDueRemainingAmount)}`}
+                        count={paymentDueBills.length}
+                        bills={paymentDueBills}
+                        emptyMessage="ไม่มีรายการค้างชำระ"
+                        open={openPendingGroups.paymentDue}
+                        onOpenChange={(isOpen) => {
+                          setOpenPendingGroups((prev) => ({
+                            ...prev,
+                            paymentDue: isOpen,
+                          }));
+                          if (!isOpen) {
+                            setExpandPendingBills((prev) => ({
+                              ...prev,
+                              paymentDue: false,
+                            }));
+                          }
+                        }}
+                        expandAllBills={expandPendingBills.paymentDue}
+                        onToggleExpandAllBills={() =>
+                          setOpenPendingGroups((prevOpen) => {
+                            const shouldCollapse =
+                              prevOpen.paymentDue &&
+                              expandPendingBills.paymentDue;
+
+                            setExpandPendingBills((prevExpand) => ({
+                              ...prevExpand,
+                              paymentDue: shouldCollapse ? false : true,
+                            }));
+
+                            return {
+                              ...prevOpen,
+                              paymentDue: shouldCollapse ? false : true,
+                            };
+                          })
+                        }
+                        tone="paymentDue"
+                      />
+                    </div>
+
+                    <CollapsibleGroupSection
+                      eyebrow="Store"
+                      title="▼ ร้านค้า"
+                      description={`ยอดคงค้างรวม ${formatCurrency(storeBillsRemainingAmount)}`}
+                      count={storeBills.length}
+                      bills={storeBills}
+                      emptyMessage="ไม่มีรายการร้านค้า"
+                      open={openPendingGroups.store}
+                      onOpenChange={(isOpen) => {
+                        setOpenPendingGroups((prev) => ({
+                          ...prev,
+                          store: isOpen,
+                        }));
+                        if (!isOpen) {
+                          setExpandPendingBills((prev) => ({
+                            ...prev,
+                            store: false,
+                          }));
+                        }
+                      }}
+                      expandAllBills={expandPendingBills.store}
+                      onToggleExpandAllBills={() =>
+                        setOpenPendingGroups((prevOpen) => {
+                          const shouldCollapse =
+                            prevOpen.store && expandPendingBills.store;
+
+                          setExpandPendingBills((prevExpand) => ({
+                            ...prevExpand,
+                            store: shouldCollapse ? false : true,
+                          }));
+
+                          return {
+                            ...prevOpen,
+                            store: shouldCollapse ? false : true,
+                          };
+                        })
+                      }
+                      tone="store"
+                    />
+                  </div>
+                </section>
               </div>
-            </section>
+
+              <section className="mt-3 rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)] lg:sticky lg:top-3 lg:mt-0 lg:max-h-[calc(100vh-1.5rem)] lg:overflow-auto">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
+                      History
+                    </p>
+                    <h2 className="mt-1 text-base font-semibold text-gray-900">
+                      ประวัติบิล
+                    </h2>
+                    <p className="mt-1 text-xs leading-5 text-gray-600">
+                      สำหรับค้นหาย้อนหลัง โดยจัดกลุ่มตามเดือนและวันที่
+                    </p>
+                  </div>
+                  <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
+                    {historyBillsOnly.length} รายการ
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {historyByMonth.length > 0 ? (
+                    historyByMonth.map((monthGroup) => (
+                      <details
+                        key={monthGroup.monthLabel}
+                        open={shouldExpandHistory}
+                        className="rounded-[18px] border border-[#ececf0] bg-white"
+                      >
+                        <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-gray-900">
+                          {monthGroup.monthLabel}
+                        </summary>
+                        <div className="space-y-2 border-t border-[#f0f1f4] px-2 py-2">
+                          {monthGroup.dates.map((dateGroup) => (
+                            <details
+                              key={`${monthGroup.monthLabel}-${dateGroup.dateLabel}`}
+                              open={shouldExpandHistory}
+                              className="rounded-[18px] bg-[#f7f7f8]"
+                            >
+                              <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-gray-700">
+                                {dateGroup.dateLabel} ({dateGroup.bills.length})
+                              </summary>
+                              <div className="space-y-2 px-2 pb-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
+                                {dateGroup.bills.map((bill) => (
+                                  <BillCard
+                                    key={bill.id}
+                                    bill={bill}
+                                    defaultOpen={shouldExpandHistory}
+                                  />
+                                ))}
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      </details>
+                    ))
+                  ) : (
+                    <div className="rounded-[18px] bg-gray-50 px-3 py-4 text-xs text-gray-500">
+                      ไม่มีประวัติบิลที่ตรงกับคำค้น
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
           </div>
         )}
       </section>
@@ -1226,7 +1438,7 @@ export default function DashboardPage() {
               behavior: "smooth",
             })
           }
-          className="fixed right-3 bottom-24 z-40 rounded-full border border-gray-200 bg-white/95 p-3 text-gray-700 shadow-[0_10px_24px_rgba(15,23,42,0.10)] backdrop-blur"
+          className="fixed right-3 bottom-24 z-40 rounded-full border border-[#cfe0fb] bg-[#eef5ff] p-3 text-[#3f6da8] shadow-[0_14px_30px_rgba(72,109,168,0.18)] backdrop-blur"
           aria-label="Back to top"
         >
           <HiArrowUp className="h-4 w-4" />
