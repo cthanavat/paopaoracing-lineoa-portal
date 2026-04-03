@@ -29,11 +29,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   return (
     <div
-      className={`flex items-center ${compact ? "justify-start gap-3" : "justify-center gap-3.5"}`}
+      className={`flex items-center ${compact ? "justify-start gap-2.5" : "justify-center gap-3"}`}
     >
       <div
         className={`relative overflow-hidden rounded-full ring-1 ${
-          compact ? "h-12 w-12" : "h-16 w-16"
+          compact ? "h-11 w-11" : "h-15 w-15"
         } ${isNavTone ? "ring-white/18" : "ring-[#d4d9e1]"}`}
       >
         <Image
@@ -48,7 +48,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       </div>
       <div className="min-w-0">
         <h2
-          className={`${compact ? "text-[15px]" : "text-lg"} truncate font-semibold leading-tight ${
+          className={`${compact ? "text-[14px]" : "text-base"} truncate font-semibold leading-tight ${
             isNavTone ? "text-white" : "text-gray-950"
           }`}
         >
@@ -56,7 +56,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         </h2>
         {statusMessage && (
           <p
-            className={`${compact ? "text-xs" : "text-sm"} truncate ${
+            className={`${compact ? "text-[11px]" : "text-xs"} truncate ${
               isNavTone ? "text-slate-300" : "text-gray-600"
             }`}
           >
@@ -65,7 +65,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         )}
         {bio && (
           <p
-            className={`${compact ? "text-[11px]" : "text-xs"} truncate ${
+            className={`${compact ? "text-[10px]" : "text-xs"} truncate ${
               isNavTone ? "text-slate-400" : "text-gray-500"
             }`}
           >

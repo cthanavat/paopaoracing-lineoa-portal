@@ -26,8 +26,25 @@ export function useAppData() {
   const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
 
-  const redirectAdminToDashboard = (userRole?: string) => {
-    if (userRole === "admin" && firstLoad && pathname === "/") {
+  const normalizeValue = (value?: string) =>
+    (value || "").trim().toLowerCase();
+
+  const isEmployeeActive = (active?: string) =>
+    ["true", "1", "yes", "active"].includes(normalizeValue(active));
+
+  const canAccessDashboard = (role?: string, active?: string) => {
+    const normalizedRole = normalizeValue(role);
+    return (
+      isEmployeeActive(active) &&
+      ["admin", "manager", "supervisor"].includes(normalizedRole)
+    );
+  };
+
+  const redirectPrivilegedEmployeeToDashboard = (
+    role?: string,
+    active?: string,
+  ) => {
+    if (canAccessDashboard(role, active) && firstLoad && pathname === "/") {
       setFirstLoad(false);
       router.push("/dashboard");
     }
@@ -101,7 +118,6 @@ export function useAppData() {
             );
             if (userMember) {
               setMember(userMember);
-              redirectAdminToDashboard(userMember.userRole);
             }
           }
         }
@@ -185,7 +201,10 @@ export function useAppData() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            redirectAdminToDashboard((foundEmployee as any).userRole);
+            redirectPrivilegedEmployeeToDashboard(
+              (foundEmployee as any).role,
+              (foundEmployee as any).active,
+            );
           }
           return;
         }
@@ -208,7 +227,10 @@ export function useAppData() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            redirectAdminToDashboard((foundEmployee as any).userRole);
+            redirectPrivilegedEmployeeToDashboard(
+              (foundEmployee as any).role,
+              (foundEmployee as any).active,
+            );
           }
         }
       } catch (err) {
