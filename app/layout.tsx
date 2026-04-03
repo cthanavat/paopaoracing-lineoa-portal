@@ -1,5 +1,6 @@
 import "./globals.css";
 import BottomNav from "./components/BottomNav";
+import DevServiceWorkerReset from "./components/DevServiceWorkerReset";
 import { Kanit } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         />
       </head>
       <body className={kanit.className}>
+        <DevServiceWorkerReset />
         {children}
         <BottomNav />
       </body>
