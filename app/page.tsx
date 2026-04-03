@@ -116,7 +116,7 @@ export default function HomePage() {
           />
         </section>
 
-        <section className="mx-[3px] rounded-[20px] bg-white/94 px-1.5 py-1.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="rounded-[19px] bg-white/94 px-1.5 py-1.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           {loadMember && config ? (
             <div className="flex min-h-64 items-center justify-center rounded-[18px] bg-white">
               <Loader />
