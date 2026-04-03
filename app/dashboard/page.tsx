@@ -377,7 +377,7 @@ function getStatusTone(value: string) {
 function getSectionTone(tone: "install" | "order" | "paymentDue" | "store") {
   if (tone === "install") {
     return {
-      openSummary: "border-[#ecd8cb] bg-[#fcf2ed]",
+      openSummary: "border-[#e6c9b8] bg-[#f7e6dc]",
       openEyebrow: "text-[#b9764f]",
       openTitle: "text-[#a35d33]",
       openDescription: "text-[#93644b]",
@@ -387,26 +387,26 @@ function getSectionTone(tone: "install" | "order" | "paymentDue" | "store") {
 
   if (tone === "order") {
     return {
-      openSummary: "border-[#d0d9ea] bg-[#eef4fb]",
-      openEyebrow: "text-[#6f88b4]",
-      openTitle: "text-[#486da8]",
-      openDescription: "text-[#5b79a8]",
-      openBadge: "border-[#d6e0f0] bg-white text-[#486da8]",
+      openSummary: "border-[#e3d3a7] bg-[#f3ead1]",
+      openEyebrow: "text-[#9b7a2f]",
+      openTitle: "text-[#8b6a24]",
+      openDescription: "text-[#8b7441]",
+      openBadge: "border-[#ddcfa7] bg-white text-[#8b6a24]",
     };
   }
 
   if (tone === "store") {
     return {
-      openSummary: "border-[#d6dde5] bg-[#f2f5f8]",
+      openSummary: "border-[#c8d2dc] bg-[#e3eaf1]",
       openEyebrow: "text-[#738394]",
       openTitle: "text-[#556779]",
       openDescription: "text-[#68798a]",
-      openBadge: "border-[#dce3ea] bg-white text-[#556779]",
+      openBadge: "border-[#d1d9e3] bg-white text-[#556779]",
     };
   }
 
   return {
-    openSummary: "border-[#d7cff6] bg-[#f5f1ff]",
+    openSummary: "border-[#cec2f4] bg-[#ece5ff]",
     openEyebrow: "text-[#8474c4]",
     openTitle: "text-[#6b52c8]",
     openDescription: "text-[#7868b4]",
@@ -493,6 +493,7 @@ const GroupSection = memo(function GroupSection({
   bills,
   emptyMessage,
   tone = "default",
+  sectionTone = "neutral",
   expandAllBills = false,
   onToggleExpandAllBills,
 }: {
@@ -503,21 +504,41 @@ const GroupSection = memo(function GroupSection({
   bills: DashboardBill[];
   emptyMessage: string;
   tone?: "default" | "accent";
+  sectionTone?: "neutral" | "today";
   expandAllBills?: boolean;
   onToggleExpandAllBills?: () => void;
 }) {
+  const sectionClasses =
+    sectionTone === "today"
+      ? "border-[#c0cde3] bg-[#e3edf9]"
+      : "border-[#d4d9e1] bg-white";
+
   return (
-    <section className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+    <section
+      className={`rounded-[18px] border p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)] ${sectionClasses}`}
+    >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
+          <p
+            className={`text-[11px] font-semibold tracking-[0.18em] uppercase ${
+              sectionTone === "today" ? "text-[#5b79a8]" : "text-gray-500"
+            }`}
+          >
             {eyebrow}
           </p>
-          <h2 className="mt-1 text-base font-semibold text-gray-900">
+          <h2
+            className={`mt-1 text-base font-semibold ${
+              sectionTone === "today" ? "text-[#486da8]" : "text-gray-900"
+            }`}
+          >
             {title}
           </h2>
           {description ? (
-            <p className="mt-1 text-xs leading-5 text-gray-600">
+            <p
+              className={`mt-1 text-xs leading-5 ${
+                sectionTone === "today" ? "text-[#5d78a1]" : "text-gray-600"
+              }`}
+            >
               {description}
             </p>
           ) : null}
@@ -527,7 +548,11 @@ const GroupSection = memo(function GroupSection({
             <button
               type="button"
               onClick={onToggleExpandAllBills}
-              className="rounded-[10px] border border-[#c0d0e9] bg-[#f4f8fd] px-2 py-1 text-[11px] font-medium text-[#486da8] transition hover:border-[#aebfdd] hover:bg-[#eaf2fc] hover:text-[#355987]"
+              className={`rounded-[10px] border px-2 py-1 text-[11px] font-medium transition ${
+                sectionTone === "today"
+                  ? "border-[#b0c0da] bg-white text-[#486da8] hover:border-[#9db2d2] hover:bg-[#edf4fc] hover:text-[#355987]"
+                  : "border-[#c0d0e9] bg-[#f4f8fd] text-[#486da8] hover:border-[#aebfdd] hover:bg-[#eaf2fc] hover:text-[#355987]"
+              }`}
             >
               {count} รายการ
             </button>
@@ -586,12 +611,12 @@ const CollapsibleGroupSection = memo(function CollapsibleGroupSection({
   const toneClasses = getSectionTone(tone);
   const openBackgroundClass =
     tone === "order"
-      ? "bg-[#eef4fb]"
+      ? "bg-[#f3ead1]"
       : tone === "paymentDue"
-        ? "bg-[#f5f1ff]"
+        ? "bg-[#ece5ff]"
         : tone === "store"
-          ? "bg-[#f2f5f8]"
-          : "bg-[#fcf2ed]";
+          ? "bg-[#e3eaf1]"
+          : "bg-[#f7e6dc]";
 
   return (
     <details
@@ -796,10 +821,13 @@ export default function DashboardPage() {
     }
 
     let active = true;
+    let hasLoadedOnce = false;
 
-    const loadBills = async () => {
+    const loadBills = async (showLoadingState = false) => {
       try {
-        setLoadingBills(true);
+        if (showLoadingState || !hasLoadedOnce) {
+          setLoadingBills(true);
+        }
         const currentDate = new Date();
         const [historyResponse, billNamesResponse, billPaymentsResponse] =
           await Promise.all([
@@ -933,6 +961,7 @@ export default function DashboardPage() {
         setHistoryBills(normalized);
         setTodayReceivedAmount(receivedToday);
         setTodayPaymentBreakdown(todayBreakdown);
+        hasLoadedOnce = true;
       } catch (error) {
         if (!active) return;
         setHistoryBills([]);
@@ -951,10 +980,32 @@ export default function DashboardPage() {
       }
     };
 
-    loadBills();
+    const handleFocusRefresh = () => {
+      void loadBills();
+    };
+
+    const handleVisibilityRefresh = () => {
+      if (document.visibilityState === "visible") {
+        void loadBills();
+      }
+    };
+
+    void loadBills(true);
+
+    const refreshInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadBills();
+      }
+    }, 30_000);
+
+    window.addEventListener("focus", handleFocusRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityRefresh);
 
     return () => {
       active = false;
+      window.clearInterval(refreshInterval);
+      window.removeEventListener("focus", handleFocusRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityRefresh);
     };
   }, [config, isAdmin, isLiffReady, memberAll, user]);
 
@@ -1235,10 +1286,10 @@ export default function DashboardPage() {
               </label>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowTodayPaymentModal(true)}
-              className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:flex lg:h-full lg:flex-col lg:items-end lg:justify-between lg:p-4"
+              <button
+                type="button"
+                onClick={() => setShowTodayPaymentModal(true)}
+              className="rounded-[18px] border border-[#c7d8c8] bg-[#e7f3e8] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#b6cab8] hover:bg-[#e1efe3] lg:flex lg:h-full lg:flex-col lg:items-end lg:justify-between lg:p-4"
             >
               <div className="flex items-center justify-between gap-2 self-stretch">
                 <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
@@ -1264,7 +1315,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(todaySectionRef)}
-                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#c0cde3] bg-[#e3edf9] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#b0c0da] hover:bg-[#dbe8f7] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <HiWrenchScrewdriver className="h-4 w-4 text-[#4f6893]" />
@@ -1281,7 +1332,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(todaySectionRef)}
-                className="rounded-[18px] border border-[#d7d1cc] bg-[#F7F7F8] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cbc2bb] hover:bg-[#faf6f2] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#e6c9b8] bg-[#f7e6dc] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#d8b9a7] hover:bg-[#f3ddd0] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <HiReceiptPercent className="h-4 w-4 text-[#a35d33]" />
@@ -1298,7 +1349,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(orderSectionRef, "order")}
-                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#d0cbc4] hover:bg-[#fefcf7] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#e3d3a7] bg-[#f3ead1] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#d4c38f] hover:bg-[#eee3c3] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <HiShoppingBag className="h-4 w-4 text-[#8b6a24]" />
@@ -1317,7 +1368,7 @@ export default function DashboardPage() {
                 onClick={() =>
                   scrollToSection(paymentDueSectionRef, "paymentDue")
                 }
-                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cdc6ea] hover:bg-[#faf8ff] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#cec2f4] bg-[#ece5ff] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c0b2ef] hover:bg-[#e7deff] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <HiCreditCard className="h-4 w-4 text-[#6558a8]" />
@@ -1341,6 +1392,7 @@ export default function DashboardPage() {
                     count={sortedTodayBills.length}
                     bills={sortedTodayBills}
                     emptyMessage="วันนี้ยังไม่มีรายการที่ตรงกับคำค้น"
+                    sectionTone="today"
                     expandAllBills={expandTodayBills}
                     onToggleExpandAllBills={() =>
                       setExpandTodayBills((prev) => !prev)
@@ -1348,7 +1400,7 @@ export default function DashboardPage() {
                   />
                 </section>
 
-                <section className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <section className="rounded-[18px] border border-[#d7deea] bg-[#f6f8fb] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">

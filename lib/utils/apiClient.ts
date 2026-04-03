@@ -6,6 +6,7 @@ import {
 import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
 import {
   ensureFreshLiffSession,
+  getLiffSessionSnapshot,
   refreshExpiredLiffSession,
 } from "@/lib/utils/liffSession";
 
@@ -48,9 +49,22 @@ export async function createAuthenticatedHeaders(
     );
   }
 
-  const { idToken } = await ensureFreshLiffSession();
+  const liffSession = await getLiffSessionSnapshot();
 
-  headers.set("Authorization", `Bearer ${idToken}`);
+  if (
+    liffSession.hasExpiredToken &&
+    !liffSession.isInClient &&
+    storedLineProfile?.userId
+  ) {
+    return headers;
+  }
+
+  if (!liffSession.idToken || liffSession.hasExpiredToken) {
+    const { idToken } = await ensureFreshLiffSession();
+    headers.set("Authorization", `Bearer ${idToken}`);
+  } else {
+    headers.set("Authorization", `Bearer ${liffSession.idToken}`);
+  }
 
   if (isDebugEnabled()) {
     headers.set("x-debug-auth", "true");
