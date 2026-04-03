@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useDeferredValue, useState } from "react";
+import { useEffect, useDeferredValue, useRef, useState } from "react";
 import {
   HiArrowUp,
   HiBanknotes,
@@ -495,7 +495,8 @@ function CollapsibleGroupSection({
   count,
   bills,
   emptyMessage,
-  defaultOpen,
+  open,
+  onOpenChange,
   tone,
 }: {
   eyebrow: string;
@@ -504,34 +505,34 @@ function CollapsibleGroupSection({
   count: number;
   bills: DashboardBill[];
   emptyMessage: string;
-  defaultOpen?: boolean;
+  open: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   tone: "install" | "order" | "paymentDue" | "store";
 }) {
-  const [isOpen, setIsOpen] = useState(Boolean(defaultOpen));
   const toneClasses = getSectionTone(tone);
 
   return (
     <details
-      open={defaultOpen}
+      open={open}
       className="rounded-[18px] border border-[#ececf0] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
-      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      onToggle={(event) => onOpenChange(event.currentTarget.open)}
     >
       <summary
         className={`flex cursor-pointer list-none items-start justify-between gap-3 rounded-[18px] border px-3 py-2 transition-colors ${
-          isOpen ? toneClasses.openSummary : "border-transparent bg-[#fcfcfd]"
+          open ? toneClasses.openSummary : "border-transparent bg-[#fcfcfd]"
         }`}
       >
         <div>
           <p
             className={`text-[11px] font-semibold tracking-[0.18em] uppercase ${
-              isOpen ? toneClasses.openEyebrow : "text-gray-400"
+              open ? toneClasses.openEyebrow : "text-gray-400"
             }`}
           >
             {eyebrow}
           </p>
           <h3
             className={`mt-0.5 text-sm font-semibold ${
-              isOpen ? toneClasses.openTitle : "text-gray-900"
+              open ? toneClasses.openTitle : "text-gray-900"
             }`}
           >
             {title}
@@ -539,7 +540,7 @@ function CollapsibleGroupSection({
           {description ? (
             <p
               className={`mt-0.5 text-xs leading-5 font-normal ${
-                isOpen ? toneClasses.openDescription : "text-gray-500"
+                open ? toneClasses.openDescription : "text-gray-500"
               }`}
             >
               {description}
@@ -548,7 +549,7 @@ function CollapsibleGroupSection({
         </div>
         <span
           className={`rounded-[10px] border px-2 py-1 text-[11px] ${
-            isOpen
+            open
               ? toneClasses.openBadge
               : "border-[#e7e7eb] bg-white text-gray-500"
           }`}
@@ -594,7 +595,13 @@ export default function DashboardPage() {
   const [todayReceivedAmount, setTodayReceivedAmount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [activePendingGroup, setActivePendingGroup] = useState<
+    "order" | "paymentDue" | "store" | null
+  >(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const todaySectionRef = useRef<HTMLElement | null>(null);
+  const orderSectionRef = useRef<HTMLDivElement | null>(null);
+  const paymentDueSectionRef = useRef<HTMLDivElement | null>(null);
 
   const isAdmin =
     member?.userRole === "admin" || employee?.userRole === "admin";
@@ -874,6 +881,20 @@ export default function DashboardPage() {
   );
   const pendingJobs = pendingBills.length;
 
+  const scrollToSection = (
+    ref:
+      | { current: HTMLElement | null }
+      | { current: HTMLDivElement | null },
+    pendingGroup?: "order" | "paymentDue" | "store",
+  ) => {
+    if (pendingGroup) {
+      setActivePendingGroup(pendingGroup);
+    } else {
+      setActivePendingGroup(null);
+    }
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (isLiffLoading || loadUser) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F9F9FA]">
@@ -986,7 +1007,11 @@ export default function DashboardPage() {
               </article>
 
               <div className="grid grid-cols-2 gap-2">
-                <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection(todaySectionRef)}
+                  className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfe2e8] hover:bg-[#fcfcfd]"
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-gray-700">งานวันนี้</p>
                     <HiCalendarDays className="h-4 w-4 text-[#4f6893]" />
@@ -997,9 +1022,13 @@ export default function DashboardPage() {
                   <p className="mt-1 text-xs text-gray-600">
                     (ยอดบิล) : {formatCurrency(todayJobsTotalAmount)}
                   </p>
-                </article>
+                </button>
 
-                <article className="rounded-[18px] border border-[#e7e7eb] bg-[#F7F7F8] p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection(todaySectionRef)}
+                  className="rounded-[18px] border border-[#e7e7eb] bg-[#F7F7F8] p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#ddd6cf] hover:bg-[#faf6f2]"
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-gray-700">ค่าใช้จ่าย</p>
                     <HiMiniClock className="h-4 w-4 text-[#a35d33]" />
@@ -1010,9 +1039,13 @@ export default function DashboardPage() {
                   <p className="mt-1 text-xs text-gray-600">
                     (คงค้าง) : {formatCurrency(installBillsRemainingAmount)}
                   </p>
-                </article>
+                </button>
 
-                <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection(orderSectionRef, "order")}
+                  className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#e0dfd7] hover:bg-[#fefcf7]"
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-gray-700">สั่งของ</p>
                     <HiMiniClock className="h-4 w-4 text-[#8b6a24]" />
@@ -1023,9 +1056,15 @@ export default function DashboardPage() {
                   <p className="mt-1 text-xs text-gray-600">
                     (คงค้าง) : {formatCurrency(orderBillsRemainingAmount)}
                   </p>
-                </article>
+                </button>
 
-                <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <button
+                  type="button"
+                  onClick={() =>
+                    scrollToSection(paymentDueSectionRef, "paymentDue")
+                  }
+                  className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfdbef] hover:bg-[#faf8ff]"
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-gray-700">ค้างชำระ</p>
                     <HiMiniClock className="h-4 w-4 text-[#6558a8]" />
@@ -1036,17 +1075,19 @@ export default function DashboardPage() {
                   <p className="mt-1 text-xs text-gray-600">
                     (คงค้าง) : {formatCurrency(paymentDueRemainingAmount)}
                   </p>
-                </article>
+                </button>
               </div>
             </div>
 
-            <GroupSection
-              eyebrow="Today"
-              title="งานวันนี้"
-              count={sortedTodayBills.length}
-              bills={sortedTodayBills}
-              emptyMessage="วันนี้ยังไม่มีรายการที่ตรงกับคำค้น"
-            />
+            <section ref={todaySectionRef}>
+              <GroupSection
+                eyebrow="Today"
+                title="งานวันนี้"
+                count={sortedTodayBills.length}
+                bills={sortedTodayBills}
+                emptyMessage="วันนี้ยังไม่มีรายการที่ตรงกับคำค้น"
+              />
+            </section>
 
             <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <div className="flex items-center justify-between gap-3">
@@ -1064,26 +1105,37 @@ export default function DashboardPage() {
               </div>
 
               <div className="mt-3 space-y-2">
-                <CollapsibleGroupSection
-                  eyebrow="Order"
-                  title="▼ สั่งของ"
-                  description={`ยอดคงค้างรวม ${formatCurrency(orderBillsRemainingAmount)}`}
-                  count={orderBills.length}
-                  bills={orderBills}
-                  emptyMessage="ไม่มีรายการสั่งของ"
-                  defaultOpen
-                  tone="order"
-                />
+                <div ref={orderSectionRef}>
+                  <CollapsibleGroupSection
+                    eyebrow="Order"
+                    title="▼ สั่งของ"
+                    description={`ยอดคงค้างรวม ${formatCurrency(orderBillsRemainingAmount)}`}
+                    count={orderBills.length}
+                    bills={orderBills}
+                    emptyMessage="ไม่มีรายการสั่งของ"
+                    open={activePendingGroup === "order"}
+                    onOpenChange={(isOpen) =>
+                      setActivePendingGroup(isOpen ? "order" : null)
+                    }
+                    tone="order"
+                  />
+                </div>
 
-                <CollapsibleGroupSection
-                  eyebrow="Payment Due"
-                  title="▼ ค้างชำระ"
-                  description={`ยอดคงค้างรวม ${formatCurrency(paymentDueRemainingAmount)}`}
-                  count={paymentDueBills.length}
-                  bills={paymentDueBills}
-                  emptyMessage="ไม่มีรายการค้างชำระ"
-                  tone="paymentDue"
-                />
+                <div ref={paymentDueSectionRef}>
+                  <CollapsibleGroupSection
+                    eyebrow="Payment Due"
+                    title="▼ ค้างชำระ"
+                    description={`ยอดคงค้างรวม ${formatCurrency(paymentDueRemainingAmount)}`}
+                    count={paymentDueBills.length}
+                    bills={paymentDueBills}
+                    emptyMessage="ไม่มีรายการค้างชำระ"
+                    open={activePendingGroup === "paymentDue"}
+                    onOpenChange={(isOpen) =>
+                      setActivePendingGroup(isOpen ? "paymentDue" : null)
+                    }
+                    tone="paymentDue"
+                  />
+                </div>
 
                 <CollapsibleGroupSection
                   eyebrow="Store"
@@ -1092,6 +1144,10 @@ export default function DashboardPage() {
                   count={storeBills.length}
                   bills={storeBills}
                   emptyMessage="ไม่มีรายการร้านค้า"
+                  open={activePendingGroup === "store"}
+                  onOpenChange={(isOpen) =>
+                    setActivePendingGroup(isOpen ? "store" : null)
+                  }
                   tone="store"
                 />
               </div>
