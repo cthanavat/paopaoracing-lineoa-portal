@@ -38,6 +38,14 @@ import type {
 } from "./types/attendance";
 import { authenticatedFetch } from "@/lib/utils/apiClient";
 
+function normalizeValue(value?: string) {
+  return (value || "").trim().toLowerCase();
+}
+
+function isEmployeeActive(active?: string) {
+  return ["true", "1", "yes", "active"].includes(normalizeValue(active));
+}
+
 export default function AttendancePage() {
   const {
     user,
@@ -114,14 +122,8 @@ export default function AttendancePage() {
         return;
       }
 
-      // 2. If user exists, check if member is still loading
-      if (loadMember) {
-        return;
-      }
-
-      // 3. Check if member exists
-      if (!member) {
-        setLoading(false);
+      // 2. Wait for member loading only while employee is still unknown
+      if (loadMember && !employee) {
         return;
       }
 
@@ -175,7 +177,7 @@ export default function AttendancePage() {
 
         if (member) {
           const foundEmployee = employees.find(
-            (e: RawSheetRecord) => e.userId === member.userId,
+            (e: RawSheetRecord) => e.userId === user?.userId,
           );
           setEmployee((foundEmployee as Employee) || null);
           return { foundEmployee, employeeMap };
@@ -196,14 +198,12 @@ export default function AttendancePage() {
           }
         });
 
-        if (member) {
-          const foundEmployee = result.data.filter(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (e: any) => e.userId === member.userId,
-          )[0];
-          setEmployee(foundEmployee || null);
-          return { foundEmployee, employeeMap }; // Return map as well
-        }
+        const foundEmployee = result.data.filter(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (e: any) => e.userId === user?.userId,
+        )[0];
+        setEmployee(foundEmployee || null);
+        return { foundEmployee, employeeMap }; // Return map as well
       }
       return null;
     } catch (error) {
@@ -669,10 +669,10 @@ export default function AttendancePage() {
     );
   }
 
-  if (!user || !member) {
+  if (!user || !employee || !isEmployeeActive(employee.active)) {
     return (
       <main className="flex h-screen items-center justify-center">
-        <p className="text-gray-600">กรุณาเข้าสู่ระบบจากหน้าหลัก</p>
+        <p className="text-gray-600">หน้านี้สำหรับพนักงานที่ยัง active เท่านั้น</p>
       </main>
     );
   }
@@ -688,7 +688,7 @@ export default function AttendancePage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
       <div className="relative mx-auto max-w-md">
-      <div className="mb-2.5 rounded-[22px] bg-[#1a2232]/76 px-3 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
+      <div className="mb-2 rounded-[22px] bg-[#1a2232]/76 px-3 py-2.5 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
         <UserProfile
           pictureUrl={user.pictureUrl}
           displayName={employee?.nickname || user.displayName}
@@ -703,7 +703,7 @@ export default function AttendancePage() {
         />
         {!useAppStore.getState().isInClient &&
           employee?.userRole === "admin" && (
-            <div className="mt-2 flex justify-center">
+            <div className="mt-1.5 flex justify-center">
               <Button
                 color="light"
                 size="xs"
@@ -722,7 +722,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Navigation tabs */}
-      <div className="mx-3 mt-6 rounded-[20px] border border-[#d8dde6] bg-white/94 px-2.5 py-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="mx-3 mt-5 rounded-[20px] bg-white/94 px-2 py-2 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
       <Tabs
         aria-label="Tabs with underline"
         variant="underline"
@@ -739,9 +739,9 @@ export default function AttendancePage() {
               วันที่ {todayFormatted}
             </p>
 
-            <div className="mt-2 grid grid-cols-2 gap-2.5">
-              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2.5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-                <div className="mb-1 flex items-center space-x-1.5 text-emerald-600">
+            <div className="mt-1.5 grid grid-cols-2 gap-2">
+              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2 text-center shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+                <div className="mb-1 flex items-center justify-center space-x-1.5 text-emerald-600">
                   <HiLogin className="h-5 w-5" />
                   <span className="text-sm font-medium">เข้างาน</span>
                 </div>
@@ -750,8 +750,8 @@ export default function AttendancePage() {
                 </p>
               </div>
 
-              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2.5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-                <div className="mb-1 flex items-center space-x-1.5 text-rose-600">
+              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2 text-center shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+                <div className="mb-1 flex items-center justify-center space-x-1.5 text-rose-600">
                   <HiLogout className="h-5 w-5" />
                   <span className="text-sm font-medium">ออกงาน</span>
                 </div>
@@ -761,13 +761,13 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="mx-2 mt-3 space-y-2">
+            <div className="mx-2 mt-2.5 space-y-1.5">
               {!todayRecord && (
                 <Button
                   onClick={handleCheckIn}
                   disabled={actionLoading}
                   color="success"
-                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
+                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
                   size="md"
                 >
                   <HiLogin className="mr-2 h-5 w-5" />
@@ -780,7 +780,7 @@ export default function AttendancePage() {
                   onClick={handleCheckOut}
                   disabled={actionLoading}
                   color="failure"
-                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
+                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
                   size="md"
                 >
                   <HiLogout className="mr-2 h-5 w-5" />
@@ -789,7 +789,7 @@ export default function AttendancePage() {
               )}
 
               {todayRecord?.checkOut && (
-                <div className="rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-2.5 text-center">
+                <div className="rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-2 text-center">
                   <div className="mb-1 flex items-center justify-center space-x-1.5">
                     <HiClipboardCheck className="h-5 w-5" />
                     <span className="font-medium">บันทึกเวลาเรียบร้อยแล้ว</span>

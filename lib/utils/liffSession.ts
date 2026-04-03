@@ -48,11 +48,13 @@ function isExpired(decodedIdToken: DecodedIdToken | null | undefined) {
 export async function ensureFreshLiffSession() {
   const liffModule = await import("@line/liff");
   const liff = liffModule.default;
-  const isLoggedIn = liff.isLoggedIn();
-  const isInClient = liff.isInClient();
-  const idToken = liff.getIDToken();
-  const decodedIdToken = liff.getDecodedIDToken?.() || decodeIdToken(idToken);
-  const hasExpiredToken = isExpired(decodedIdToken);
+  const {
+    isLoggedIn,
+    isInClient,
+    idToken,
+    decodedIdToken,
+    hasExpiredToken,
+  } = await getLiffSessionSnapshot();
 
   if (isLoggedIn && idToken && !hasExpiredToken) {
     return {
@@ -98,4 +100,23 @@ export async function refreshExpiredLiffSession() {
   }
 
   throw new Error("LINE session expired. Redirecting to sign in again.");
+}
+
+export async function getLiffSessionSnapshot() {
+  const liffModule = await import("@line/liff");
+  const liff = liffModule.default;
+  const isLoggedIn = liff.isLoggedIn();
+  const isInClient = liff.isInClient();
+  const idToken = liff.getIDToken();
+  const decodedIdToken = liff.getDecodedIDToken?.() || decodeIdToken(idToken);
+  const hasExpiredToken = isExpired(decodedIdToken);
+
+  return {
+    liff,
+    isLoggedIn,
+    isInClient,
+    idToken,
+    decodedIdToken,
+    hasExpiredToken,
+  };
 }

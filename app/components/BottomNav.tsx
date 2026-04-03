@@ -21,29 +21,51 @@ const navItems = [
     label: "พนักงาน",
     icon: HiOutlineClock,
   },
-  {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: HiSquares2X2,
-  },
 ];
+
+function normalizeValue(value?: string) {
+  return (value || "").trim().toLowerCase();
+}
+
+function isEmployeeActive(active?: string) {
+  return ["true", "1", "yes", "active"].includes(normalizeValue(active));
+}
+
+function canAccessDashboard(role?: string, active?: string) {
+  const normalizedRole = normalizeValue(role);
+  return (
+    isEmployeeActive(active) &&
+    ["admin", "manager", "supervisor"].includes(normalizedRole)
+  );
+}
 
 const BottomNav: React.FC = () => {
   const pathname = usePathname();
-  const { member, employee } = useAppStore();
+  const { employee } = useAppStore();
 
-  const isAdmin =
-    member?.userRole === "admin" || employee?.userRole === "admin";
+  const showNav = isEmployeeActive(employee?.active);
+  const showDashboard = canAccessDashboard(employee?.role, employee?.active);
 
-  if (!isAdmin) {
+  if (!showNav) {
     return null;
   }
+
+  const items = showDashboard
+    ? [
+        ...navItems,
+        {
+          href: "/dashboard",
+          label: "Dashboard",
+          icon: HiSquares2X2,
+        },
+      ]
+    : navItems;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-3">
       <nav className="pointer-events-auto relative flex w-full max-w-[340px] items-center gap-1 rounded-[22px] bg-[#1a2232]/76 p-1.5 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
         <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.03))]" />
-        {navItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === "/"

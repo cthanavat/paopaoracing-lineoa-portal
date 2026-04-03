@@ -66,34 +66,34 @@ const MemberView: React.FC<MemberViewProps> = ({
         className="flex items-center justify-center"
       >
         <div className="flex flex-col items-center">
-          <div className="my-1 flex min-w-2xs justify-center">
-            <div className="w-full rounded-[18px] border border-[#d4d9e1] bg-white px-3.5 py-3.5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <div className="my-0.5 flex min-w-2xs justify-center">
+            <div className="w-full rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
               <p className="text-xs font-medium tracking-[0.24em] text-gray-400 uppercase">
                 Paopao Racing
               </p>
-              <div className="mt-2.5 space-y-0.5">
+              <div className="mt-2 space-y-0">
                 <p className="text-base font-semibold tracking-tight text-gray-950">
                   {member.name}
                 </p>
                 <p className="text-[13px] text-gray-500">{member.phone}</p>
               </div>
-              <div className="mt-2.5 inline-flex rounded-full border border-[#d4d9e1] bg-[#f8f8fa] px-3 py-1 text-[11px] font-medium text-gray-600">
+              <div className="mt-2 inline-flex rounded-full border border-[#d4d9e1] bg-[#f8f8fa] px-3 py-1 text-[11px] font-medium text-gray-600">
                 Member
               </div>
             </div>
           </div>
 
-          <div className="mt-0.5 w-full rounded-[18px] border border-[#d4d9e1] bg-[#fcfcfd] p-2 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
-            <div className="mb-2">
+          <div className="mt-2 w-full rounded-[18px] border border-[#d4d9e1] bg-[#fcfcfd] p-1.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
+            <div className="mb-1.5">
               <p className="text-[11px] font-medium tracking-[0.18em] text-gray-400 uppercase">
                 Quick Actions
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="flex flex-col items-center gap-1">
                 <button
                   onClick={() => handleServiceClick("เข้ารับบริการ")}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-5 py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-9 w-3/4 items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-4 py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!isActionEnabled}
                 >
                   เข้ารับบริการ
@@ -101,7 +101,7 @@ const MemberView: React.FC<MemberViewProps> = ({
 
                 <button
                   onClick={() => handleServiceClick("สลับยาง")}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-5 py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-9 w-3/4 items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-4 py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!isActionEnabled}
                 >
                   สลับยาง

@@ -105,8 +105,8 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#F9F9FA] px-4 pt-8 pb-24 font-sans">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-2.5">
-        <section className="rounded-[22px] bg-[#1a2232]/76 px-3 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
+      <div className="relative mx-auto flex w-full max-w-md flex-col gap-2">
+        <section className="rounded-[22px] bg-[#1a2232]/76 px-3 py-2.5 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
           <UserProfile
             displayName={user.displayName}
             pictureUrl={user.pictureUrl}
@@ -116,7 +116,7 @@ export default function HomePage() {
           />
         </section>
 
-        <section className="mx-3 mt-6 rounded-[20px] border border-[#d8dde6] bg-white/94 px-2.5 py-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="mx-3 mt-5 rounded-[20px] bg-white/94 px-2 py-2 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           {loadMember && config ? (
             <div className="flex min-h-64 items-center justify-center">
               <Loader />
@@ -127,7 +127,7 @@ export default function HomePage() {
               setNotification={setNotification}
             />
           ) : !canOpenSignup ? (
-            <div className="flex min-h-56 flex-col items-center justify-center rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-5 text-center">
+            <div className="flex min-h-52 flex-col items-center justify-center rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-4 text-center">
               <p className="text-xs font-medium tracking-[0.24em] text-gray-400 uppercase">
                 Line Login Required
               </p>

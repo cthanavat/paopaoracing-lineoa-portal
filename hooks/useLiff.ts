@@ -2,8 +2,14 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
 import { debugLog } from "@/lib/utils/debug";
-import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
-import { ensureFreshLiffSession } from "@/lib/utils/liffSession";
+import {
+  getBrowserAuthUser,
+  getStoredLineProfile,
+} from "@/lib/utils/browserAuthUser";
+import {
+  ensureFreshLiffSession,
+  getLiffSessionSnapshot,
+} from "@/lib/utils/liffSession";
 
 let hasInitializedLiff = false;
 
@@ -93,12 +99,14 @@ export function useLiff() {
           isInClient,
           isLoggedIn,
           idToken,
-        } = await ensureFreshLiffSession();
+          hasExpiredToken,
+        } = await getLiffSessionSnapshot();
 
         debugLog("[LIFF] init:ready", {
           isInClient,
           isLoggedIn,
           hasIdToken: Boolean(idToken),
+          hasExpiredToken,
           currentUrl: window.location.href,
         });
 
@@ -106,10 +114,32 @@ export function useLiff() {
         setIsInClient(isInClient);
 
         if (!isLoggedIn) {
+          const storedProfile = getStoredLineProfile();
+          if (storedProfile && !isInClient) {
+            setUser(storedProfile);
+            return;
+          }
+
           const redirectUri = getSafeRedirectUri();
           debugLog("[LIFF] init:login-required", { redirectUri });
           liff.login({ redirectUri });
           return;
+        }
+
+        if (hasExpiredToken && !isInClient) {
+          const storedProfile = getStoredLineProfile();
+
+          if (storedProfile) {
+            debugLog("[LIFF] init:stored-profile-fallback", {
+              userId: storedProfile.userId,
+            });
+            setUser(storedProfile);
+            return;
+          }
+        }
+
+        if (hasExpiredToken) {
+          await ensureFreshLiffSession();
         }
 
         const profile = await liff.getProfile();
