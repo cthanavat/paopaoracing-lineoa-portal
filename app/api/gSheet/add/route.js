@@ -12,6 +12,14 @@ const ALLOWED_WRITE_RESOURCES = new Set([
   "employee_leaves",
 ]);
 
+function isPlaceholderUser(user) {
+  return (
+    !user ||
+    user.userId === "dev-user" ||
+    user.name === "Local Dev"
+  );
+}
+
 export async function POST(request) {
   const auth = await requireVerifiedLineUser(request);
   if (auth.error) {
@@ -34,6 +42,17 @@ export async function POST(request) {
     let notificationName = auth.user.name || "Employee";
 
     if (resource === "userLine") {
+      if (isPlaceholderUser(auth.user)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Cannot create member with placeholder development identity",
+          },
+          { status: 403 },
+        );
+      }
+
       safeRow[4] = auth.user.userId;
       notificationName = safeRow[1] || auth.user.name || "Member";
     }

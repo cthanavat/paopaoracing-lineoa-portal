@@ -9,6 +9,11 @@ import {
   refreshExpiredLiffSession,
 } from "@/lib/utils/liffSession";
 
+function encodeHeaderValue(value?: string) {
+  if (!value) return "";
+  return encodeURIComponent(value);
+}
+
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
 ): Promise<Headers> {
@@ -23,7 +28,7 @@ export async function createAuthenticatedHeaders(
     );
     headers.set(
       "x-dev-auth-name",
-      browserUser.displayName,
+      encodeHeaderValue(browserUser.displayName),
     );
 
     if (!headers.has("Content-Type")) {
@@ -37,7 +42,10 @@ export async function createAuthenticatedHeaders(
 
   if (storedLineProfile?.userId) {
     headers.set("x-line-profile-user-id", storedLineProfile.userId);
-    headers.set("x-line-profile-name", storedLineProfile.displayName);
+    headers.set(
+      "x-line-profile-name",
+      encodeHeaderValue(storedLineProfile.displayName),
+    );
   }
 
   const { idToken } = await ensureFreshLiffSession();

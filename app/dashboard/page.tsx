@@ -1,6 +1,13 @@
 "use client";
 
-import { memo, useEffect, useDeferredValue, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useEffect,
+  useDeferredValue,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   HiArrowUp,
   HiBanknotes,
@@ -41,6 +48,19 @@ interface BillNameRow {
 
 interface BillPaymentRow {
   [key: string]: string;
+}
+
+interface PaymentMethodSummary {
+  label: string;
+  amount: number;
+  count: number;
+  details?: string;
+}
+
+interface PaymentMethodBucket {
+  amount: number;
+  count: number;
+  details: Set<string>;
 }
 
 const TODAY_TASK_STATUS_ORDER = new Map<string, number>([
@@ -119,7 +139,8 @@ function formatMonthYear(value: string) {
   if (!parsed) return value || "-";
   const year = parsed.getFullYear();
   const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  const monthShort = parsed.toLocaleDateString("en-US", { month: "short" });
+  return `${year}-${month} (${monthShort})`;
 }
 
 function formatDayTitle(value: Date) {
@@ -128,6 +149,13 @@ function formatDayTitle(value: Date) {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const year = value.getFullYear();
   return `${weekday}, ${day}/${month}/${year}`;
+}
+
+function formatDateFromDate(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function isSameDay(value: string, compareDate: Date) {
@@ -204,6 +232,52 @@ function getPaymentDate(row: BillPaymentRow) {
     row.updated_at ||
     ""
   );
+}
+
+function getPaymentMethod(row: BillPaymentRow) {
+  return normalizeStatus(
+    row.payment_method ||
+      row.payment_type ||
+      row.pay_type ||
+      row.payment_channel ||
+      row.channel ||
+      row.method ||
+      row.pay_by ||
+      row.bill_credit_type ||
+      row.credit_type,
+  );
+}
+
+function categorizePaymentMethod(value: string) {
+  const normalized = normalizeStatus(value).toLowerCase();
+
+  if (
+    normalized.includes("เงินสด") ||
+    normalized.includes("cash")
+  ) {
+    return "เงินสด";
+  }
+
+  if (
+    normalized.includes("สแกน") ||
+    normalized.includes("scan") ||
+    normalized.includes("qr") ||
+    normalized.includes("พร้อมเพย์") ||
+    normalized.includes("โอน")
+  ) {
+    return "สแกน";
+  }
+
+  if (
+    normalized.includes("เครดิต") ||
+    normalized.includes("credit") ||
+    normalized.includes("บัตร") ||
+    normalized.includes("card")
+  ) {
+    return "เครดิต";
+  }
+
+  return "อื่นๆ";
 }
 
 function normalizeBill(
@@ -289,6 +363,7 @@ function getStatusTone(value: string) {
   if (
     normalized === "รอติดตั้ง" ||
     normalized === "รอชำระ" ||
+    normalized === "รอจ่าย" ||
     normalized === "ชำระบางส่วน"
   ) {
     return "border-[#e7d7b2] bg-[#fdf5e6] text-[#9a6d14]";
@@ -385,8 +460,8 @@ const BillCard = memo(function BillCard({
 }) {
   const toneClasses =
     tone === "accent"
-      ? "border-[#dbe2ee] bg-[#f4f7fb]"
-      : "border-[#ececf0] bg-white";
+      ? "border-[#c8d4e6] bg-[#f4f7fb]"
+      : "border-[#d4d9e1] bg-white";
 
   return (
     <details
@@ -413,10 +488,10 @@ const BillCard = memo(function BillCard({
         </div>
       </summary>
       <div className="px-3 pb-3">
-        <p className="border-t border-[#f0f1f4] pt-2 text-xs leading-5 whitespace-pre-line text-gray-600">
+        <p className="border-t border-[#dde3eb] pt-2 text-xs leading-5 whitespace-pre-line text-gray-600">
           {bill.detail}
         </p>
-        <div className="border-t border-[#f0f1f4] pt-2">
+        <div className="border-t border-[#dde3eb] pt-2">
           <div className="flex items-center justify-end gap-3 text-xs">
             {bill.remainingAmount > 0 ? (
               <span className="inline-flex items-center gap-1.5 font-medium">
@@ -457,7 +532,7 @@ const GroupSection = memo(function GroupSection({
   onToggleExpandAllBills?: () => void;
 }) {
   return (
-    <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+    <section className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -477,7 +552,7 @@ const GroupSection = memo(function GroupSection({
             <button
               type="button"
               onClick={onToggleExpandAllBills}
-              className="rounded-[10px] border border-[#d9e4f4] bg-[#f4f8fd] px-2 py-1 text-[11px] font-medium text-[#486da8] transition hover:border-[#c7d8ef] hover:bg-[#eaf2fc] hover:text-[#355987]"
+              className="rounded-[10px] border border-[#c0d0e9] bg-[#f4f8fd] px-2 py-1 text-[11px] font-medium text-[#486da8] transition hover:border-[#aebfdd] hover:bg-[#eaf2fc] hover:text-[#355987]"
             >
               {count} รายการ
             </button>
@@ -551,9 +626,7 @@ const CollapsibleGroupSection = memo(function CollapsibleGroupSection({
       }`}
       onToggle={(event) => onOpenChange(event.currentTarget.open)}
     >
-      <summary
-        className="flex cursor-pointer list-none items-start justify-between gap-3 border-b border-[#ececf0] px-3 py-2.5"
-      >
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 border-b border-[#d4d9e1] px-3 py-2.5">
         <div>
           <p
             className={`text-[11px] font-semibold tracking-[0.18em] uppercase ${
@@ -654,6 +727,10 @@ export default function DashboardPage() {
   const [historyBills, setHistoryBills] = useState<DashboardBill[]>([]);
   const [loadingBills, setLoadingBills] = useState(true);
   const [todayReceivedAmount, setTodayReceivedAmount] = useState(0);
+  const [todayPaymentBreakdown, setTodayPaymentBreakdown] = useState<
+    PaymentMethodSummary[]
+  >([]);
+  const [showTodayPaymentModal, setShowTodayPaymentModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [openPendingGroups, setOpenPendingGroups] = useState({
@@ -667,6 +744,12 @@ export default function DashboardPage() {
     paymentDue: false,
     store: false,
   });
+  const [openHistoryDates, setOpenHistoryDates] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandHistoryBills, setExpandHistoryBills] = useState<
+    Record<string, boolean>
+  >({});
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [today] = useState(() => new Date());
   const todaySectionRef = useRef<HTMLElement | null>(null);
@@ -699,6 +782,19 @@ export default function DashboardPage() {
   }, [notification.show]);
 
   useEffect(() => {
+    if (!showTodayPaymentModal) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowTodayPaymentModal(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showTodayPaymentModal]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 260);
     };
@@ -712,6 +808,7 @@ export default function DashboardPage() {
     if (!isLiffReady || !user || !isAdmin) {
       setLoadingBills(false);
       setTodayReceivedAmount(0);
+      setTodayPaymentBreakdown([]);
       return;
     }
 
@@ -719,6 +816,7 @@ export default function DashboardPage() {
       setHistoryBills([]);
       setLoadingBills(false);
       setTodayReceivedAmount(0);
+      setTodayPaymentBreakdown([]);
       return;
     }
 
@@ -797,13 +895,57 @@ export default function DashboardPage() {
           },
           new Map<string, number>(),
         );
-        const receivedToday = billPaymentRows.reduce(
-          (sum: number, row: BillPaymentRow) =>
-            isSameDay(getPaymentDate(row), currentDate)
-              ? sum + getPaymentAmount(row)
-              : sum,
+        const todayMethodMap: Map<string, PaymentMethodBucket> = new Map();
+        for (const row of billPaymentRows as BillPaymentRow[]) {
+            if (!isSameDay(getPaymentDate(row), currentDate)) {
+              continue;
+            }
+
+            const amount = getPaymentAmount(row);
+            const bucket = categorizePaymentMethod(getPaymentMethod(row));
+            const rawMethod = getPaymentMethod(row);
+            const entry: PaymentMethodBucket =
+              todayMethodMap.get(bucket) || {
+              amount: 0,
+              count: 0,
+              details: new Set<string>(),
+            };
+
+            entry.amount += amount;
+            entry.count += 1;
+            if (rawMethod && bucket === "อื่นๆ") {
+              entry.details.add(rawMethod);
+            }
+            todayMethodMap.set(bucket, entry);
+        }
+        const receivedToday = Array.from(
+          todayMethodMap.values(),
+        ).reduce<number>(
+          (sum, entry) => sum + entry.amount,
           0,
         );
+        const todayBreakdown: PaymentMethodSummary[] = [
+          "เงินสด",
+          "สแกน",
+          "เครดิต",
+          "อื่นๆ",
+        ]
+          .map((label): PaymentMethodSummary => {
+            const entry = todayMethodMap.get(label);
+            return {
+              label,
+              amount: entry?.amount || 0,
+              count: entry?.count || 0,
+              details:
+                label === "อื่นๆ" && entry && entry.details.size > 0
+                  ? Array.from(entry.details).join(", ")
+                  : undefined,
+            };
+          })
+          .filter(
+            (entry: PaymentMethodSummary) =>
+              entry.amount !== 0 || entry.count > 0,
+          );
         const normalized = rows
           .map((row: HistoryItem, index: number) =>
             normalizeBill(row, index, memberMap, billNameMap, paymentTotals),
@@ -817,10 +959,12 @@ export default function DashboardPage() {
 
         setHistoryBills(normalized);
         setTodayReceivedAmount(receivedToday);
+        setTodayPaymentBreakdown(todayBreakdown);
       } catch (error) {
         if (!active) return;
         setHistoryBills([]);
         setTodayReceivedAmount(0);
+        setTodayPaymentBreakdown([]);
         setNotification({
           show: true,
           message:
@@ -862,7 +1006,8 @@ export default function DashboardPage() {
   const todayBills = useMemo(
     () =>
       visibleBills.filter(
-        (bill) => isSameDay(bill.date, today) || bill.taskStatus === "รอติดตั้ง",
+        (bill) =>
+          isSameDay(bill.date, today) || bill.taskStatus === "รอติดตั้ง",
       ),
     [visibleBills, today],
   );
@@ -873,7 +1018,9 @@ export default function DashboardPage() {
   const installBills = useMemo(
     () =>
       visibleBills.filter(
-        (bill) => isSameDay(bill.date, today) || bill.taskStatus === "ค้างเบิก",
+        (bill) =>
+          bill.billStatus === "ใบสั่งซื้อ" &&
+          (isSameDay(bill.date, today) || bill.taskStatus === "ค้างเบิก"),
       ),
     [visibleBills, today],
   );
@@ -907,9 +1054,12 @@ export default function DashboardPage() {
     () =>
       Array.from(
         new Map(
-          [...todayBills, ...installBills, ...orderBills, ...paymentDueBills].map(
-            (bill) => [bill.id, bill],
-          ),
+          [
+            ...todayBills,
+            ...installBills,
+            ...orderBills,
+            ...paymentDueBills,
+          ].map((bill) => [bill.id, bill]),
         ).values(),
       ),
     [todayBills, installBills, orderBills, paymentDueBills],
@@ -918,14 +1068,16 @@ export default function DashboardPage() {
   const historyByMonth = useMemo(
     () =>
       historyBillsOnly.reduce<
-    Array<{
-      monthLabel: string;
-      dates: Array<{ dateLabel: string; bills: DashboardBill[] }>;
-    }>
-  >((groups, bill) => {
+        Array<{
+          monthLabel: string;
+          dates: Array<{ dateLabel: string; bills: DashboardBill[] }>;
+        }>
+      >((groups, bill) => {
         const monthLabel = formatMonthYear(bill.date);
         const dateLabel = formatDate(bill.date);
-        const monthGroup = groups.find((group) => group.monthLabel === monthLabel);
+        const monthGroup = groups.find(
+          (group) => group.monthLabel === monthLabel,
+        );
 
         if (!monthGroup) {
           groups.push({
@@ -1051,7 +1203,7 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
       <section className="relative border-b border-gray-100/80 bg-transparent">
         <div className="mx-auto max-w-7xl px-3 pt-3 pb-3 sm:px-4">
-          <div className="rounded-[22px] border border-[#ececf0] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)] lg:p-4">
+          <div className="rounded-[22px] border border-[#d4d9e1] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)] lg:p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -1062,7 +1214,7 @@ export default function DashboardPage() {
                 </h1>
               </div>
 
-              <div className="shrink-0 rounded-[18px] border border-[#ececf0] bg-white px-2 py-1.5">
+              <div className="shrink-0 rounded-[18px] border border-[#d4d9e1] bg-white px-2 py-1.5">
                 <UserProfile
                   pictureUrl={user.pictureUrl}
                   displayName={employee?.nickname || user.displayName}
@@ -1072,70 +1224,83 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <label className="mt-3 flex items-center gap-2 rounded-[18px] border border-[#e6e6ea] bg-[#F7F7F8] px-3 py-2 text-xs text-gray-600 lg:mt-4 lg:max-w-xl">
-              <HiMagnifyingGlass className="h-4 w-4 text-gray-400" />
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="ค้นหาป้ายทะเบียน รายละเอียด หรือเลขบิล"
-                className="w-full bg-transparent outline-none placeholder:text-gray-400"
-              />
-              {searchTerm ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm("")}
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-                  aria-label="ล้างคำค้น"
-                >
-                  <HiMiniXMark className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-            </label>
           </div>
         </div>
       </section>
 
       <section className="relative mx-auto max-w-7xl px-3 py-3 sm:px-4 lg:py-4">
+        <section className="mb-3 rounded-[22px] border border-[#d4d9e1] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)] lg:mb-4 lg:p-4">
+          <div className="grid gap-2 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)] lg:items-stretch">
+            <div className="grid gap-2">
+              <div className="rounded-[18px] border border-[#d1d6de] bg-[#F7F7F8] px-3 py-2.5">
+                <p className="text-[10px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
+                  Today
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gray-900">
+                  {formatDayTitle(today)}
+                </p>
+              </div>
+
+              <label className="flex items-center gap-2 rounded-[18px] border border-[#d1d6de] bg-[#F7F7F8] px-3 py-2.5 text-xs text-gray-600">
+                <HiMagnifyingGlass className="h-4 w-4 shrink-0 text-gray-400" />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="ค้นหาป้ายทะเบียน รายละเอียด หรือเลขบิล"
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
+                />
+                {searchTerm ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+                    aria-label="ล้างคำค้น"
+                  >
+                    <HiMiniXMark className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowTodayPaymentModal(true)}
+              className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:flex lg:flex-col lg:justify-between lg:p-4"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-700">ยอดเงินที่รับชำระวันนี้</p>
+                <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
+              </div>
+              <p className="mt-2 text-2xl font-semibold text-[#2f6b45] lg:text-[2rem]">
+                {formatCurrency(todayReceivedAmount)}
+              </p>
+              <p className="mt-1 text-xs text-gray-600">
+                ยอดรอติดตั้ง : {formatCurrency(waitingInstallRemainingAmount)}
+              </p>
+            </button>
+          </div>
+        </section>
+
         {loadingBills ? (
-          <div className="flex min-h-[240px] items-center justify-center rounded-[22px] border border-[#ececf0] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+          <div className="flex min-h-[240px] items-center justify-center rounded-[22px] border border-[#d4d9e1] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
             <Loader />
           </div>
         ) : (
           <div className="space-y-3 lg:space-y-4">
-            <section className="space-y-2">
-              <p className="my-0 mt-1 px-4 py-0 text-right text-lg font-medium text-gray-700 lg:px-0 lg:text-left">
-                {formatDayTitle(today)}
-              </p>
-              <article className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)] lg:p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-700">
-                    ยอดเงินที่รับชำระวันนี้
-                  </p>
-                  <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
-                </div>
-                <p className="mt-2 text-2xl font-semibold text-[#2f6b45] lg:text-[2rem]">
-                  {formatCurrency(todayReceivedAmount)}
-                </p>
-                <p className="mt-1 text-xs text-gray-600">
-                  ยอดรอติดตั้ง : {formatCurrency(waitingInstallRemainingAmount)}
-                </p>
-              </article>
-            </section>
-
             <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
               <button
                 type="button"
                 onClick={() => scrollToSection(todaySectionRef)}
-                className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfe2e8] hover:bg-[#fcfcfd] lg:min-h-[148px] lg:p-4"
+                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-700">งานวันนี้</p>
                   <HiCalendarDays className="h-4 w-4 text-[#4f6893]" />
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-[#4f6893]">
+                <p className="mt-1 text-[1.45rem] font-semibold text-[#4f6893]">
                   {todayJobsCount} บิล
                 </p>
-                <p className="mt-1 text-xs text-gray-600">
+                <p className="mt-0 text-[11px] text-gray-600">
                   (ยอดบิล) : {formatCurrency(todayJobsTotalAmount)}
                 </p>
               </button>
@@ -1143,16 +1308,16 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(todaySectionRef)}
-                className="rounded-[18px] border border-[#e7e7eb] bg-[#F7F7F8] p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#ddd6cf] hover:bg-[#faf6f2] lg:min-h-[148px] lg:p-4"
+                className="rounded-[18px] border border-[#d7d1cc] bg-[#F7F7F8] p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cbc2bb] hover:bg-[#faf6f2] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-700">ค่าใช้จ่าย</p>
                   <HiMiniClock className="h-4 w-4 text-[#a35d33]" />
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-[#a35d33]">
+                <p className="mt-1 text-[1.45rem] font-semibold text-[#a35d33]">
                   {installBills.length} บิล
                 </p>
-                <p className="mt-1 text-xs text-gray-600">
+                <p className="mt-0 text-[11px] text-gray-600">
                   (คงค้าง) : {formatCurrency(installBillsRemainingAmount)}
                 </p>
               </button>
@@ -1160,16 +1325,16 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(orderSectionRef, "order")}
-                className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#e0dfd7] hover:bg-[#fefcf7] lg:min-h-[148px] lg:p-4"
+                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#d0cbc4] hover:bg-[#fefcf7] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-700">สั่งของ</p>
                   <HiMiniClock className="h-4 w-4 text-[#8b6a24]" />
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-[#8b6a24]">
+                <p className="mt-1 text-[1.45rem] font-semibold text-[#8b6a24]">
                   {orderBills.length} บิล
                 </p>
-                <p className="mt-1 text-xs text-gray-600">
+                <p className="mt-0 text-[11px] text-gray-600">
                   (คงค้าง) : {formatCurrency(orderBillsRemainingAmount)}
                 </p>
               </button>
@@ -1179,16 +1344,16 @@ export default function DashboardPage() {
                 onClick={() =>
                   scrollToSection(paymentDueSectionRef, "paymentDue")
                 }
-                className="rounded-[18px] border border-[#ececf0] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#dfdbef] hover:bg-[#faf8ff] lg:min-h-[148px] lg:p-4"
+                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cdc6ea] hover:bg-[#faf8ff] lg:min-h-[108px] lg:p-2.5"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-700">ค้างชำระ</p>
                   <HiMiniClock className="h-4 w-4 text-[#6558a8]" />
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-[#6558a8]">
+                <p className="mt-1 text-[1.45rem] font-semibold text-[#6558a8]">
                   {paymentDueBills.length} บิล
                 </p>
-                <p className="mt-1 text-xs text-gray-600">
+                <p className="mt-0 text-[11px] text-gray-600">
                   (คงค้าง) : {formatCurrency(paymentDueRemainingAmount)}
                 </p>
               </button>
@@ -1210,7 +1375,7 @@ export default function DashboardPage() {
                   />
                 </section>
 
-                <section className="rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <section className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
@@ -1229,7 +1394,7 @@ export default function DashboardPage() {
                           store: !isAllPendingGroupsOpen,
                         })
                       }
-                      className="inline-flex items-center justify-center rounded-[10px] border border-[#d9e4f4] bg-[#f4f8fd] px-2.5 py-1 text-[11px] font-medium text-[#486da8] shadow-sm transition hover:border-[#c7d8ef] hover:bg-[#eaf2fc] hover:text-[#355987]"
+                      className="inline-flex items-center justify-center rounded-[10px] border border-[#c0d0e9] bg-[#f4f8fd] px-2.5 py-1 text-[11px] font-medium text-[#486da8] shadow-sm transition hover:border-[#aebfdd] hover:bg-[#eaf2fc] hover:text-[#355987]"
                     >
                       {pendingJobs} รายการ
                     </button>
@@ -1364,18 +1529,15 @@ export default function DashboardPage() {
                 </section>
               </div>
 
-              <section className="mt-3 rounded-[18px] border border-[#ececf0] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)] lg:sticky lg:top-3 lg:mt-0 lg:max-h-[calc(100vh-1.5rem)] lg:overflow-auto">
+              <section className="mt-3 rounded-[18px] border border-[#d4d9e1] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)] lg:sticky lg:top-3 lg:mt-0 lg:max-h-[calc(100vh-1.5rem)] lg:overflow-auto">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
                       History
                     </p>
                     <h2 className="mt-1 text-base font-semibold text-gray-900">
-                      ประวัติบิล
+                      ประวัติ
                     </h2>
-                    <p className="mt-1 text-xs leading-5 text-gray-600">
-                      สำหรับค้นหาย้อนหลัง โดยจัดกลุ่มตามเดือนและวันที่
-                    </p>
                   </div>
                   <span className="rounded-[10px] bg-[#f7f7f8] px-2 py-1 text-[11px] text-gray-600">
                     {historyBillsOnly.length} รายการ
@@ -1388,27 +1550,99 @@ export default function DashboardPage() {
                       <details
                         key={monthGroup.monthLabel}
                         open={shouldExpandHistory}
-                        className="rounded-[18px] border border-[#ececf0] bg-white"
+                        className="rounded-[18px] border border-[#d4d9e1] bg-white"
                       >
                         <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold text-gray-900">
                           {monthGroup.monthLabel}
                         </summary>
-                        <div className="space-y-2 border-t border-[#f0f1f4] px-2 py-2">
+                        <div className="space-y-2 border-t border-[#dde3eb] px-2 py-2">
                           {monthGroup.dates.map((dateGroup) => (
                             <details
                               key={`${monthGroup.monthLabel}-${dateGroup.dateLabel}`}
-                              open={shouldExpandHistory}
-                              className="rounded-[18px] bg-[#f7f7f8]"
+                              open={
+                                shouldExpandHistory ||
+                                openHistoryDates[
+                                  `${monthGroup.monthLabel}-${dateGroup.dateLabel}`
+                                ] ||
+                                false
+                              }
+                              className="rounded-[18px] bg-[#eef4fb]"
+                              onToggle={(event) => {
+                                const groupKey = `${monthGroup.monthLabel}-${dateGroup.dateLabel}`;
+                                const isOpen = event.currentTarget.open;
+                                setOpenHistoryDates((prev) => ({
+                                  ...prev,
+                                  [groupKey]: isOpen,
+                                }));
+                                if (!isOpen) {
+                                  setExpandHistoryBills((prev) => ({
+                                    ...prev,
+                                    [groupKey]: false,
+                                  }));
+                                }
+                              }}
                             >
-                              <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-gray-700">
-                                {dateGroup.dateLabel} ({dateGroup.bills.length})
+                              <summary className="cursor-pointer list-none rounded-[14px] border border-[#d4d9e1] bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:border-[#c8ced8] hover:bg-[#fbfcfd]">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span className="shrink-0">
+                                      {dateGroup.dateLabel}
+                                    </span>
+                                    <span className="truncate text-[#486da8]">
+                                      {formatCurrency(
+                                        dateGroup.bills.reduce(
+                                          (sum, bill) => sum + bill.totalAmount,
+                                          0,
+                                        ),
+                                      )}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      const groupKey = `${monthGroup.monthLabel}-${dateGroup.dateLabel}`;
+                                      const isExpanded =
+                                        shouldExpandHistory ||
+                                        expandHistoryBills[groupKey] ||
+                                        false;
+                                      const nextValue = !isExpanded;
+
+                                      setOpenHistoryDates((prev) => ({
+                                        ...prev,
+                                        [groupKey]: nextValue,
+                                      }));
+                                      setExpandHistoryBills((prev) => ({
+                                        ...prev,
+                                        [groupKey]: nextValue,
+                                      }));
+                                    }}
+                                    className="inline-flex shrink-0 items-center justify-center rounded-[10px] border border-[#d4d9e1] bg-[#f7f9fc] px-2 py-1 text-gray-500 shadow-sm"
+                                  >
+                                    {dateGroup.bills.length} คัน
+                                  </button>
+                                </div>
                               </summary>
-                              <div className="space-y-2 px-2 pb-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
+                              <div className="space-y-3 px-3 pt-2 pb-3">
                                 {dateGroup.bills.map((bill) => (
                                   <BillCard
-                                    key={bill.id}
+                                    key={`${bill.id}-${
+                                      shouldExpandHistory ||
+                                      expandHistoryBills[
+                                        `${monthGroup.monthLabel}-${dateGroup.dateLabel}`
+                                      ]
+                                        ? "open"
+                                        : "closed"
+                                    }`}
                                     bill={bill}
-                                    defaultOpen={shouldExpandHistory}
+                                    defaultOpen={
+                                      shouldExpandHistory ||
+                                      expandHistoryBills[
+                                        `${monthGroup.monthLabel}-${dateGroup.dateLabel}`
+                                      ] ||
+                                      false
+                                    }
                                   />
                                 ))}
                               </div>
@@ -1443,6 +1677,85 @@ export default function DashboardPage() {
         >
           <HiArrowUp className="h-4 w-4" />
         </button>
+      ) : null}
+
+      {showTodayPaymentModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-black/20 px-3 py-4 sm:items-center sm:justify-center"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowTodayPaymentModal(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-[22px] border border-[#d4d9e1] bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.14)]"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
+                  Today
+                </p>
+                <h3 className="mt-1 text-base font-semibold text-gray-900">
+                  ยอดเงินที่รับชำระวันนี้
+                </h3>
+                <p className="mt-1 text-xs text-gray-600">
+                  สรุปตามช่องทางการรับเงินของวันที่ {formatDateFromDate(today)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTodayPaymentModal(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f6f8] text-gray-500 transition hover:bg-[#e9edf2] hover:text-gray-700"
+                aria-label="ปิดรายละเอียดการรับเงิน"
+              >
+                <HiMiniXMark className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {todayPaymentBreakdown.length > 0 ? (
+                todayPaymentBreakdown.map((entry) => (
+                  <div
+                    key={entry.label}
+                    className="rounded-[18px] border border-[#d7dde6] bg-[#f8fafc] px-3 py-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {entry.label}
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          {entry.count} รายการ
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-[#2f6b45]">
+                        {formatCurrency(entry.amount)}
+                      </p>
+                    </div>
+                    {entry.details ? (
+                      <p className="mt-1 text-xs text-gray-500">
+                        {entry.details}
+                      </p>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[18px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
+                  วันนี้ยังไม่มีรายการรับชำระ
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center justify-between border-t border-[#e1e6ed] pt-3">
+              <p className="text-sm text-gray-600">ยอดรวมวันนี้</p>
+              <p className="text-base font-semibold text-[#2f6b45]">
+                {formatCurrency(todayReceivedAmount)}
+              </p>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <Notification

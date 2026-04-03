@@ -67,7 +67,7 @@ const MemberView: React.FC<MemberViewProps> = ({
       >
         <div className="flex flex-col items-center">
           <div className="my-2 flex min-w-2xs justify-center">
-            <div className="w-full rounded-[18px] border border-[#ececf0] bg-white px-5 py-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+            <div className="w-full rounded-[18px] border border-[#d4d9e1] bg-white px-5 py-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
               <p className="text-xs font-medium tracking-[0.24em] text-gray-400 uppercase">
                 Paopao Racing
               </p>
@@ -77,13 +77,13 @@ const MemberView: React.FC<MemberViewProps> = ({
                 </p>
                 <p className="text-sm text-gray-500">{member.phone}</p>
               </div>
-              <div className="mt-4 inline-flex rounded-full border border-[#ececf0] bg-[#f8f8fa] px-3 py-1 text-xs font-medium text-gray-600">
+              <div className="mt-4 inline-flex rounded-full border border-[#d4d9e1] bg-[#f8f8fa] px-3 py-1 text-xs font-medium text-gray-600">
                 Member
               </div>
             </div>
           </div>
 
-          <div className="mt-1 w-full rounded-[18px] border border-[#ececf0] bg-[#fcfcfd] p-3 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
+          <div className="mt-1 w-full rounded-[18px] border border-[#d4d9e1] bg-[#fcfcfd] p-3 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
             <div className="mb-3">
               <p className="text-[11px] font-medium tracking-[0.18em] text-gray-400 uppercase">
                 Quick Actions
@@ -93,7 +93,7 @@ const MemberView: React.FC<MemberViewProps> = ({
             <div className="space-y-2">
                 <button
                   onClick={() => handleServiceClick("เข้ารับบริการ")}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#e7e7eb] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:bg-[#F9F9FA] focus:bg-[#F9F9FA] focus-visible:ring-2 focus-visible:ring-[#bfc8d8] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#d4d9e1] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:bg-[#F9F9FA] focus:bg-[#F9F9FA] focus-visible:ring-2 focus-visible:ring-[#bfc8d8] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!isActionEnabled}
                 >
                   เข้ารับบริการ
@@ -101,7 +101,7 @@ const MemberView: React.FC<MemberViewProps> = ({
 
                 <button
                   onClick={() => handleServiceClick("สลับยาง")}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#e7e7eb] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:bg-[#F9F9FA] focus:bg-[#F9F9FA] focus-visible:ring-2 focus-visible:ring-[#bfc8d8] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#d4d9e1] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:bg-[#F9F9FA] focus:bg-[#F9F9FA] focus-visible:ring-2 focus-visible:ring-[#bfc8d8] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!isActionEnabled}
                 >
                   สลับยาง

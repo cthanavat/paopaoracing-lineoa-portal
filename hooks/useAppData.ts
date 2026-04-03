@@ -26,6 +26,13 @@ export function useAppData() {
   const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
 
+  const redirectAdminToDashboard = (userRole?: string) => {
+    if (userRole === "admin" && firstLoad && pathname === "/") {
+      setFirstLoad(false);
+      router.push("/dashboard");
+    }
+  };
+
   // Fetch Config
   useEffect(() => {
     const fetchConfig = async () => {
@@ -94,10 +101,7 @@ export function useAppData() {
             );
             if (userMember) {
               setMember(userMember);
-              if (user.userRole === "admin" && firstLoad && pathname === "/") {
-                setFirstLoad(false);
-                router.push("/dashboard");
-              }
+              redirectAdminToDashboard(userMember.userRole);
             }
           }
         }
@@ -180,11 +184,8 @@ export function useAppData() {
           if (foundEmployee) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
-
-            if (firstLoad && pathname === "/") {
-              setFirstLoad(false);
-              router.push("/dashboard");
-            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            redirectAdminToDashboard((foundEmployee as any).userRole);
           }
           return;
         }
@@ -206,11 +207,8 @@ export function useAppData() {
             // It's an employee!
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
-
-            if (firstLoad && pathname === "/") {
-              setFirstLoad(false);
-              router.push("/dashboard");
-            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            redirectAdminToDashboard((foundEmployee as any).userRole);
           }
         }
       } catch (err) {
