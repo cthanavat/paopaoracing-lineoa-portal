@@ -10,6 +10,7 @@ interface UserProfileProps {
   statusMessage?: string;
   bio?: string;
   compact?: boolean;
+  tone?: "light" | "nav";
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -18,17 +19,22 @@ const UserProfile: React.FC<UserProfileProps> = ({
   statusMessage,
   bio,
   compact = false,
+  tone = "light",
 }) => {
   const [imageSrc, setImageSrc] = useState(
     pictureUrl || "/placeholder-avatar.svg",
   );
 
+  const isNavTone = tone === "nav";
+
   return (
     <div
-      className={`flex items-center ${compact ? "justify-start gap-3" : "mt-8 mb-2 justify-center"}`}
+      className={`flex items-center ${compact ? "justify-start gap-3" : "justify-center gap-3.5"}`}
     >
       <div
-        className={`relative overflow-hidden rounded-full ${compact ? "h-11 w-11" : "h-20 w-20"}`}
+        className={`relative overflow-hidden rounded-full ring-1 ${
+          compact ? "h-12 w-12" : "h-16 w-16"
+        } ${isNavTone ? "ring-white/18" : "ring-[#d4d9e1]"}`}
       >
         <Image
           src={imageSrc}
@@ -40,19 +46,29 @@ const UserProfile: React.FC<UserProfileProps> = ({
           onError={() => setImageSrc("/placeholder-avatar.svg")}
         />
       </div>
-      <div className={compact ? "min-w-0" : "ml-4"}>
-        <h2 className={`${compact ? "text-sm" : "text-lg"} font-semibold`}>
+      <div className="min-w-0">
+        <h2
+          className={`${compact ? "text-[15px]" : "text-lg"} truncate font-semibold leading-tight ${
+            isNavTone ? "text-white" : "text-gray-950"
+          }`}
+        >
           {displayName}
         </h2>
         {statusMessage && (
           <p
-            className={`${compact ? "text-xs" : "text-sm"} text-gray-600`}
+            className={`${compact ? "text-xs" : "text-sm"} truncate ${
+              isNavTone ? "text-slate-300" : "text-gray-600"
+            }`}
           >
             {statusMessage}
           </p>
         )}
         {bio && (
-          <p className={`${compact ? "text-xs" : "text-sm"} text-gray-600`}>
+          <p
+            className={`${compact ? "text-[11px]" : "text-xs"} truncate ${
+              isNavTone ? "text-slate-400" : "text-gray-500"
+            }`}
+          >
             {bio}
           </p>
         )}

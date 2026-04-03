@@ -684,11 +684,11 @@ export default function AttendancePage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#F9F9FA] px-4 py-4 pb-24">
+    <main className="min-h-screen bg-[#F9F9FA] px-4 pt-8 pb-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
       <div className="relative mx-auto max-w-md">
-      <div className="mb-4 rounded-[22px] border border-[#d4d9e1] bg-white/92 p-3 shadow-[0_20px_56px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="mb-2.5 rounded-[22px] bg-[#1a2232]/76 px-3 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
         <UserProfile
           pictureUrl={user.pictureUrl}
           displayName={employee?.nickname || user.displayName}
@@ -698,10 +698,12 @@ export default function AttendancePage() {
             user.statusMessage
           }
           bio={`${employee?.role || ""}`}
+          compact
+          tone="nav"
         />
         {!useAppStore.getState().isInClient &&
           employee?.userRole === "admin" && (
-            <div className="mt-3 flex justify-center">
+            <div className="mt-2 flex justify-center">
               <Button
                 color="light"
                 size="xs"
@@ -711,7 +713,7 @@ export default function AttendancePage() {
                     window.location.reload();
                   }
                 }}
-                className="rounded-full border border-[#d4d9e1] bg-[#F9F9FA] px-4 text-xs font-medium text-gray-600"
+                className="rounded-full border border-white/16 bg-white/8 px-4 text-xs font-medium text-slate-200 hover:bg-white/12"
               >
                 Logout
               </Button>
@@ -720,11 +722,11 @@ export default function AttendancePage() {
       </div>
 
       {/* Navigation tabs */}
-      <div className="rounded-[22px] border border-[#d4d9e1] bg-white/94 px-4 py-5 shadow-[0_20px_56px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="mx-3 mt-6 rounded-[20px] border border-[#d8dde6] bg-white/94 px-2.5 py-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
       <Tabs
         aria-label="Tabs with underline"
         variant="underline"
-        className="apple-tabs flex min-w-2xs items-center-safe"
+        className="apple-tabs apple-tabs-3 flex min-w-2xs items-center-safe"
       >
         <TabItem
           active
@@ -737,35 +739,35 @@ export default function AttendancePage() {
               วันที่ {todayFormatted}
             </p>
 
-            <div className="mt-2 grid grid-cols-2 gap-4">
-              <div className="rounded-[18px] border border-[#d4d9e1] bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-                <div className="mb-2 flex items-center space-x-2 text-emerald-600">
+            <div className="mt-2 grid grid-cols-2 gap-2.5">
+              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2.5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+                <div className="mb-1 flex items-center space-x-1.5 text-emerald-600">
                   <HiLogin className="h-5 w-5" />
                   <span className="text-sm font-medium">เข้างาน</span>
                 </div>
-                <p className="text-2xl font-semibold tracking-tight text-emerald-700">
+                <p className="text-lg font-semibold tracking-tight text-emerald-700">
                   {todayRecord?.checkIn || "--:--:--"}
                 </p>
               </div>
 
-              <div className="rounded-[18px] border border-[#d4d9e1] bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-                <div className="mb-2 flex items-center space-x-2 text-rose-600">
+              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2.5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+                <div className="mb-1 flex items-center space-x-1.5 text-rose-600">
                   <HiLogout className="h-5 w-5" />
                   <span className="text-sm font-medium">ออกงาน</span>
                 </div>
-                <p className="text-2xl font-semibold tracking-tight text-rose-700">
+                <p className="text-lg font-semibold tracking-tight text-rose-700">
                   {todayRecord?.checkOut || "--:--:--"}
                 </p>
               </div>
             </div>
 
-            <div className="mx-6 mt-5 space-y-3">
+            <div className="mx-2 mt-3 space-y-2">
               {!todayRecord && (
                 <Button
                   onClick={handleCheckIn}
                   disabled={actionLoading}
                   color="success"
-                  className="w-full rounded-full border border-emerald-200 bg-emerald-600 py-2.5 text-sm font-medium text-white shadow-[0_12px_28px_rgba(5,150,105,0.22)] hover:bg-emerald-700 hover:opacity-100"
+                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
                   size="md"
                 >
                   <HiLogin className="mr-2 h-5 w-5" />
@@ -778,7 +780,7 @@ export default function AttendancePage() {
                   onClick={handleCheckOut}
                   disabled={actionLoading}
                   color="failure"
-                  className="w-full rounded-full border border-rose-200 bg-rose-600 py-2.5 text-sm font-medium text-white shadow-[0_12px_28px_rgba(225,29,72,0.2)] hover:bg-rose-700 hover:opacity-100"
+                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
                   size="md"
                 >
                   <HiLogout className="mr-2 h-5 w-5" />
@@ -787,8 +789,8 @@ export default function AttendancePage() {
               )}
 
               {todayRecord?.checkOut && (
-                <div className="rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] p-3 text-center">
-                  <div className="mb-2 flex items-center justify-center space-x-2">
+                <div className="rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-2.5 text-center">
+                  <div className="mb-1 flex items-center justify-center space-x-1.5">
                     <HiClipboardCheck className="h-5 w-5" />
                     <span className="font-medium">บันทึกเวลาเรียบร้อยแล้ว</span>
                   </div>
@@ -799,9 +801,9 @@ export default function AttendancePage() {
               )}
             </div>
 
-            <div className="my-8 border-t border-[#d4d9e1]"></div>
+            <div className="my-6 border-t border-[#d4d9e1]"></div>
 
-            <div className="mx-auto max-w-xs min-w-2xs px-4 pt-0">
+            <div className="mx-auto max-w-xs min-w-2xs px-2 pt-0">
               <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
             </div>
           </div>
@@ -812,7 +814,7 @@ export default function AttendancePage() {
           icon={HiCalendar}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-md space-y-4">
+          <div className="mx-auto max-w-md space-y-3">
             {attendanceHistory.length === 0 ? (
               <Card className="rounded-[18px] border border-[#d4d9e1] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
                 <p className="text-center text-gray-500">ยังไม่มีประวัติ</p>

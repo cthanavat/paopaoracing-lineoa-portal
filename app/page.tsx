@@ -13,7 +13,9 @@ import MemberView from "@/app/components/MemberView";
 import SignupForm from "@/app/components/SignupForm";
 import { NotificationState, ModalState } from "@/types/ui";
 
-function isPlaceholderUser(user: { userId?: string; displayName?: string } | null) {
+function isPlaceholderUser(
+  user: { userId?: string; displayName?: string } | null,
+) {
   return user?.userId === "dev-user" || user?.displayName === "Local Dev";
 }
 
@@ -100,19 +102,21 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F9F9FA] px-4 py-4 pb-24 font-sans">
+    <main className="min-h-screen bg-[#F9F9FA] px-4 pt-8 pb-24 font-sans">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-4">
-        <section className="rounded-[22px] border border-[#d4d9e1] bg-white/92 p-3 shadow-[0_20px_56px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="relative mx-auto flex w-full max-w-md flex-col gap-2.5">
+        <section className="rounded-[22px] bg-[#1a2232]/76 px-3 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
           <UserProfile
             displayName={user.displayName}
             pictureUrl={user.pictureUrl}
             statusMessage={user.statusMessage}
+            compact
+            tone="nav"
           />
         </section>
 
-        <section className="rounded-[22px] border border-[#d4d9e1] bg-white/94 px-4 py-5 shadow-[0_20px_56px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="mx-3 mt-6 rounded-[20px] border border-[#d8dde6] bg-white/94 px-2.5 py-2.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           {loadMember && config ? (
             <div className="flex min-h-64 items-center justify-center">
               <Loader />
@@ -123,7 +127,7 @@ export default function HomePage() {
               setNotification={setNotification}
             />
           ) : !canOpenSignup ? (
-            <div className="flex min-h-64 flex-col items-center justify-center rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-5 py-6 text-center">
+            <div className="flex min-h-56 flex-col items-center justify-center rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-5 text-center">
               <p className="text-xs font-medium tracking-[0.24em] text-gray-400 uppercase">
                 Line Login Required
               </p>
@@ -131,7 +135,8 @@ export default function HomePage() {
                 กรุณาเข้าสู่ระบบด้วย LINE ก่อน
               </h3>
               <p className="mt-2 text-sm leading-6 text-gray-600">
-                หากยังไม่ได้เข้าสู่ระบบ LINE จริง ระบบจะยังไม่เปิดหน้าสมัครสมาชิก
+                หากยังไม่ได้เข้าสู่ระบบ LINE จริง
+                ระบบจะยังไม่เปิดหน้าสมัครสมาชิก
               </p>
               {process.env.NEXT_PUBLIC_LIFF_ID ? (
                 <a
