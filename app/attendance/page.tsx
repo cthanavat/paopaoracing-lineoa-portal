@@ -684,11 +684,11 @@ export default function AttendancePage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#F9F9FA] px-4 pt-8 pb-24">
+    <main className="min-h-screen bg-[#F9F9FA] px-2.5 pt-8 pb-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
-      <div className="relative mx-auto max-w-md">
-      <div className="mb-2 rounded-[22px] bg-[#1a2232]/76 px-3 py-2.5 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
+      <div className="relative mx-auto max-w-xl">
+      <div className="mx-auto mb-3 max-w-lg rounded-[22px] bg-[#1a2232]/76 px-3.5 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
         <UserProfile
           pictureUrl={user.pictureUrl}
           displayName={employee?.nickname || user.displayName}
@@ -722,7 +722,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Navigation tabs */}
-      <div className="mx-3 mt-5 rounded-[20px] bg-white/94 px-2 py-2 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="mx-[3px] rounded-[20px] bg-white/94 px-0.5 py-1.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
       <Tabs
         aria-label="Tabs with underline"
         variant="underline"
@@ -734,13 +734,13 @@ export default function AttendancePage() {
           icon={HiClock}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-xs">
-            <p className="text-center text-sm font-medium tracking-tight text-gray-500">
+          <div className="mx-auto w-full max-w-none px-0 sm:max-w-md">
+            <p className="text-center text-[18px] font-semibold tracking-tight text-gray-800 sm:text-[1.18rem]">
               วันที่ {todayFormatted}
             </p>
 
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2 text-center shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+            <div className="mt-2 grid grid-cols-2 gap-2.5">
+              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-3 text-center shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
                 <div className="mb-1 flex items-center justify-center space-x-1.5 text-emerald-600">
                   <HiLogin className="h-5 w-5" />
                   <span className="text-sm font-medium">เข้างาน</span>
@@ -750,7 +750,7 @@ export default function AttendancePage() {
                 </p>
               </div>
 
-              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-2 text-center shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+              <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-3 text-center shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
                 <div className="mb-1 flex items-center justify-center space-x-1.5 text-rose-600">
                   <HiLogout className="h-5 w-5" />
                   <span className="text-sm font-medium">ออกงาน</span>
@@ -761,13 +761,13 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="mx-2 mt-2.5 space-y-1.5">
+            <div className="mx-auto mt-3 w-full max-w-sm space-y-2">
               {!todayRecord && (
                 <Button
                   onClick={handleCheckIn}
                   disabled={actionLoading}
                   color="success"
-                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
+                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
                   size="md"
                 >
                   <HiLogin className="mr-2 h-5 w-5" />
@@ -780,7 +780,7 @@ export default function AttendancePage() {
                   onClick={handleCheckOut}
                   disabled={actionLoading}
                   color="failure"
-                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
+                  className="mx-auto w-3/4 rounded-full border border-white/16 bg-[#1a2232] py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:bg-[#222d40] hover:opacity-100"
                   size="md"
                 >
                   <HiLogout className="mr-2 h-5 w-5" />
@@ -789,7 +789,7 @@ export default function AttendancePage() {
               )}
 
               {todayRecord?.checkOut && (
-                <div className="rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-2 text-center">
+                <div className="rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-3 text-center">
                   <div className="mb-1 flex items-center justify-center space-x-1.5">
                     <HiClipboardCheck className="h-5 w-5" />
                     <span className="font-medium">บันทึกเวลาเรียบร้อยแล้ว</span>
@@ -801,9 +801,9 @@ export default function AttendancePage() {
               )}
             </div>
 
-            <div className="my-6 border-t border-[#d4d9e1]"></div>
+            <div className="my-5 border-t border-[#d4d9e1]"></div>
 
-            <div className="mx-auto max-w-xs min-w-2xs px-2 pt-0">
+            <div className="pt-0">
               <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
             </div>
           </div>
@@ -814,18 +814,36 @@ export default function AttendancePage() {
           icon={HiCalendar}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-md space-y-3">
+          <div className="mx-auto w-full max-w-none space-y-3 px-0 sm:max-w-md">
             {attendanceHistory.length === 0 ? (
               <Card className="rounded-[18px] border border-[#d4d9e1] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
                 <p className="text-center text-gray-500">ยังไม่มีประวัติ</p>
               </Card>
             ) : (
-              <Timeline>
+              <Timeline
+                theme={{
+                  root: {
+                    direction: {
+                      vertical: "relative border-l-2 border-[#c6d1df]",
+                    },
+                  },
+                  item: {
+                    point: {
+                      marker: {
+                        base: {
+                          vertical:
+                            "absolute -left-[0.5rem] mt-1.5 h-4 w-4 rounded-full border-2 border-white bg-[#8ba4c8]",
+                        },
+                      },
+                    },
+                  },
+                }}
+              >
                 {attendanceHistory.map((record, idx) => (
                   <TimelineItem key={idx} className="mb-1 ml-4">
                     <TimelinePoint />
                     <TimelineContent>
-                      <TimelineTime>
+                      <TimelineTime className="text-[12px] font-medium text-gray-500">
                         {`${new Date(record.date).getFullYear()}-${(
                           "0" +
                           (new Date(record.date).getMonth() + 1)
@@ -841,7 +859,7 @@ export default function AttendancePage() {
                       {/* Leave Section */}
                       {record.leaveType && (
                         <div className="mb-3 border-l-4 border-orange-200 pl-3">
-                          <TimelineTitle>
+                          <TimelineTitle className="text-[14px] font-semibold">
                             {(() => {
                               const recordDate = new Date(record.date);
                               const currentDate = new Date();
@@ -881,8 +899,8 @@ export default function AttendancePage() {
                               );
                             })()}
                           </TimelineTitle>
-                          <TimelineBody>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
+                          <TimelineBody className="pt-1">
+                            <div className="grid grid-cols-2 gap-2 text-[13px] text-gray-700">
                               <p>
                                 <span className="font-medium">ประเภท:</span>{" "}
                                 {record.leaveReason}
@@ -905,7 +923,7 @@ export default function AttendancePage() {
                               : ""
                           }
                         >
-                          <TimelineTitle>
+                          <TimelineTitle className="text-[14px] font-semibold">
                             {(() => {
                               const recordDate = new Date(record.date);
                               recordDate.setHours(0, 0, 0, 0);
@@ -928,8 +946,8 @@ export default function AttendancePage() {
                               return null; // Or an empty string if no title is desired for completed records
                             })()}
                           </TimelineTitle>
-                          <TimelineBody>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
+                          <TimelineBody className="pt-1">
+                            <div className="grid grid-cols-2 gap-2 text-[13px] text-gray-700">
                               <div>
                                 <span className="text-gray-500">เข้า:</span>{" "}
                                 <span className="font-medium text-green-600">
@@ -959,20 +977,20 @@ export default function AttendancePage() {
           icon={HiLogout}
           className="flex items-center justify-center"
         >
-          <div className="mx-auto max-w-xs min-w-2xs px-4 pt-0">
-            <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
-          </div>
+          <div className="mx-auto w-full max-w-none px-0 sm:max-w-md">
+            <div className="pt-0">
+              <AllEmployeeLeaveSchedule leaves={allEmployeeLeaves} />
+            </div>
 
-          <div className="mt-6">
             <form
               onSubmit={handleLeaveSubmit}
-              className="mt-6 rounded-[18px] border border-[#d4d9e1] bg-white px-4 py-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
+              className="mt-5 rounded-[18px] border border-[#d4d9e1] bg-white px-3.5 py-3.5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
             >
-              <h3 className="mb-1 max-w-xs text-center text-lg font-semibold tracking-tight text-gray-950">
+              <h3 className="mb-2 text-center text-[15px] font-semibold tracking-tight text-gray-950">
                 ลงวันหยุด
               </h3>
               <div className="mb-2">
-                <label className="mb-1 block text-sm text-gray-700">
+                <label className="mb-1 block text-[13px] font-medium text-gray-700">
                   วันที่
                 </label>
                 <input
@@ -981,12 +999,12 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, date: e.target.value })
                   }
-                  className="w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-2.5 text-sm shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
+                  className="box-border min-w-0 w-full max-w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-1.5 text-[13px] shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
                   required
                 />
               </div>
               <div className="mb-2">
-                <label className="mb-1 block text-sm text-gray-700">
+                <label className="mb-1 block text-[13px] font-medium text-gray-700">
                   จำนวน
                 </label>
                 <select
@@ -997,7 +1015,7 @@ export default function AttendancePage() {
                       leave_option: e.target.value,
                     })
                   }
-                  className="w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-2.5 text-sm shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
+                  className="box-border min-w-0 w-full max-w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-1.5 text-[13px] shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
                 >
                   <option value="ครึ่งวัน">ครึ่งวัน</option>
                   <option value="1 วัน">1 วัน</option>
@@ -1005,7 +1023,7 @@ export default function AttendancePage() {
                 </select>
               </div>
               <div className="mb-2">
-                <label className="mb-1 block text-sm text-gray-700">
+                <label className="mb-1 block text-[13px] font-medium text-gray-700">
                   ประเภทการลา
                 </label>
                 <select
@@ -1013,7 +1031,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, reason: e.target.value })
                   }
-                  className="w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-2.5 text-sm shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
+                  className="box-border min-w-0 w-full max-w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-1.5 text-[13px] shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
                 >
                   <option value="วันหยุด">วันหยุด</option>
                   <option value="ลาป่วย">ลาป่วย</option>
@@ -1022,7 +1040,7 @@ export default function AttendancePage() {
                 </select>
               </div>
               <div className="mb-2">
-                <label className="mb-1 block text-sm text-gray-700">
+                <label className="mb-1 block text-[13px] font-medium text-gray-700">
                   เหตุผล
                 </label>
                 <textarea
@@ -1031,7 +1049,7 @@ export default function AttendancePage() {
                     setLeaveForm({ ...leaveForm, detail: e.target.value })
                   }
                   rows={3}
-                  className="w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-4 py-2 text-sm shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
+                  className="box-border min-w-0 w-full max-w-full rounded-[18px] border border-[#d4d9e1] bg-[#f7f7f8] px-3 py-1.5 text-[13px] shadow-sm focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
                   placeholder="ระบุเหตุผลการลา..."
                 />
               </div>
@@ -1039,19 +1057,19 @@ export default function AttendancePage() {
                 <Button
                   type="submit"
                   disabled={actionLoading}
-                  className="text-md w-full rounded-full border border-[#e7e7eb] bg-[#111111] py-2.5 font-medium text-white shadow-[0_12px_32px_rgba(17,17,17,0.2)] hover:bg-[#202020] hover:opacity-100"
+                  className="w-full rounded-full border border-[#e7e7eb] bg-[#111111] py-2 text-sm font-medium text-white shadow-[0_12px_32px_rgba(17,17,17,0.2)] hover:bg-[#202020] hover:opacity-100"
                   size="md"
                 >
                   {actionLoading ? "กำลังส่ง..." : "ส่งคำขอ"}
                 </Button>
               </div>
             </form>
-            <div className="mt-4 rounded-[18px] border border-[#d4d9e1] bg-white px-3 pt-6 pb-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-              <h3 className="mb-4 text-center text-lg font-semibold tracking-tight text-gray-900">
+            <div className="mt-4 rounded-[18px] border border-[#d4d9e1] bg-white px-3.5 pt-5 pb-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+              <h3 className="mb-4 text-center text-[15px] font-semibold tracking-tight text-gray-900">
                 คำขอทั้งหมด
               </h3>
               {leaveHistory.length === 0 ? (
-                <p className="text-center text-gray-500">ไม่พบประวัติการลา</p>
+                <p className="text-center text-[13px] text-gray-500">ไม่พบประวัติการลา</p>
               ) : (
                 <div className="space-y-3">
                   {leaveHistory.map((leave, index) => (
@@ -1061,7 +1079,7 @@ export default function AttendancePage() {
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="text-[14px] font-semibold text-gray-900">
                             {`${new Date(leave.date).getFullYear()}-${(
                               "0" +
                               (new Date(leave.date).getMonth() + 1)
@@ -1073,7 +1091,7 @@ export default function AttendancePage() {
                               weekday: "short",
                             })})`}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-[13px] text-gray-600">
                             {leave.leave_option} - {leave.reason}
                           </p>
                           {/* {leave.detail && (
@@ -1081,7 +1099,7 @@ export default function AttendancePage() {
                   )} */}
                         </div>
                         <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${
+                          className={`rounded-full px-2 py-1 text-[11px] font-medium ${
                             // Leave status is directly from the status column.
                             leave.status === "Approved"
                               ? "bg-green-100 text-green-800"

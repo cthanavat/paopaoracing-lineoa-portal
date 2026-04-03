@@ -12,13 +12,13 @@ export default function AllEmployeeLeaveSchedule({
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   return (
-    <div className="mt-0 mb-4">
-      <h3 className="text-md mb-1 max-w-xs text-center font-semibold text-gray-800">
+    <div className="mb-4">
+      <h3 className="mb-2 text-center text-[15px] font-semibold tracking-tight text-gray-900">
         ตารางวันหยุด
       </h3>
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {leaves.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 text-center text-gray-500">
+          <div className="rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-4 text-center text-sm text-gray-500">
             ไม่มีรายการลาที่อนุมัติแล้วในเร็วๆ นี้
           </div>
         ) : (
@@ -34,29 +34,29 @@ export default function AllEmployeeLeaveSchedule({
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-between rounded-2xl px-4 py-2 shadow-sm ${
+                  className={`flex items-center justify-between rounded-[18px] px-3 py-2.5 shadow-[0_12px_28px_rgba(15,23,42,0.04)] ${
                     isToday
                       ? "border border-[#bfd4ff] bg-[#eef5ff]"
-                      : "border border-gray-200 bg-white"
+                      : "border border-[#d4d9e1] bg-white"
                   }`}
                 >
-                <div>
-                  <p className={`font-medium ${isToday ? "text-[#295aa6]" : "text-gray-900"}`}>
+                <div className="min-w-0 pr-3">
+                  <p className={`truncate text-[14px] font-semibold ${isToday ? "text-[#295aa6]" : "text-gray-900"}`}>
                     {leave.employeeName}
                   </p>
-                  <p className={`text-sm ${isToday ? "text-[#4f6893]" : "text-gray-600"}`}>
+                  <p className={`truncate text-[12px] ${isToday ? "text-[#4f6893]" : "text-gray-600"}`}>
                     {leave.leaveType} - {leave.leaveReason}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className={`text-sm font-medium ${isToday ? "text-[#295aa6]" : "text-gray-900"}`}>
+                <div className="shrink-0 text-right">
+                  <p className={`text-[12px] font-semibold ${isToday ? "text-[#295aa6]" : "text-gray-900"}`}>
                     {new Date(leave.date).toLocaleDateString("th-TH", {
                       day: "numeric",
                       month: "short",
                       year: "2-digit",
                     })}
                   </p>
-                  <p className={`text-xs ${isToday ? "text-[#5d7fb6]" : "text-gray-500"}`}>
+                  <p className={`text-[11px] ${isToday ? "text-[#5d7fb6]" : "text-gray-500"}`}>
                     {leave.status === "Approved"
                       ? "อนุมัติ"
                       : leave.status === "Pending"

@@ -176,7 +176,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-md min-w-2xs space-y-2.5 rounded-[18px] border border-[#d4d9e1] bg-white px-3.5 py-3.5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]"
+      className="mx-auto w-full max-w-md space-y-3 rounded-[18px] border border-[#d4d9e1] bg-white px-3.5 py-3.5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]"
     >
       <div className="space-y-0.5 text-center">
         <p className="text-xs font-medium uppercase tracking-[0.24em] text-gray-400">
@@ -194,7 +194,7 @@ const SignupForm: React.FC<SignupFormProps> = ({
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="h-10.5 w-full rounded-[18px] border border-[#d4d9e1] bg-[#F9F9FA] px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
+          className="h-11 w-full rounded-[18px] border border-[#d4d9e1] bg-[#F9F9FA] px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
           placeholder="ใช้ชื่อจริง (สำหรับ ยื่นประกัน)"
           required
         />
@@ -207,18 +207,18 @@ const SignupForm: React.FC<SignupFormProps> = ({
           type="text"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          className="w-full rounded-[18px] border border-[#d4d9e1] bg-[#F9F9FA] px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
+          className="h-11 w-full rounded-[18px] border border-[#d4d9e1] bg-[#F9F9FA] px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#c7ceda] focus:bg-white focus:ring-2 focus:ring-[#d5dbe6] focus:outline-none"
           placeholder="0123456789"
           required
         />
       </div>
       <Button
         type="submit"
-        className="w-full rounded-full border border-[#d4d9e1] bg-[#111111] py-1.5 text-sm font-medium text-white shadow-[0_12px_32px_rgba(17,17,17,0.22)] hover:bg-[#202020] hover:opacity-100"
+        className="w-full rounded-full border border-[#d4d9e1] bg-[#111111] py-2 text-sm font-medium text-white shadow-[0_12px_32px_rgba(17,17,17,0.22)] hover:bg-[#202020] hover:opacity-100"
         size="md"
         disabled={isSignup}
       >
-        {isSignup ? "กำลังสมัครสมาชิก..." : "Submit"}
+        {isSignup ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
       </Button>
     </form>
   );
