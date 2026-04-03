@@ -7,6 +7,22 @@ import { ensureFreshLiffSession } from "@/lib/utils/liffSession";
 
 let hasInitializedLiff = false;
 
+function getSafeRedirectUri() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("redirect");
+  url.searchParams.delete("liff.state");
+  url.searchParams.delete("access_token");
+  url.searchParams.delete("id_token");
+  url.searchParams.delete("code");
+  url.searchParams.delete("state");
+  url.hash = "";
+  return url.toString();
+}
+
 export function useLiff() {
   const {
     setUser,
@@ -90,8 +106,9 @@ export function useLiff() {
         setIsInClient(isInClient);
 
         if (!isLoggedIn) {
-          debugLog("[LIFF] init:login-required");
-          liff.login({ redirectUri: window.location.href });
+          const redirectUri = getSafeRedirectUri();
+          debugLog("[LIFF] init:login-required", { redirectUri });
+          liff.login({ redirectUri });
           return;
         }
 

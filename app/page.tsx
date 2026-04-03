@@ -17,24 +17,6 @@ function isPlaceholderUser(user: { userId?: string; displayName?: string } | nul
   return user?.userId === "dev-user" || user?.displayName === "Local Dev";
 }
 
-function canRedirectToLineLogin() {
-  if (typeof window === "undefined") return false;
-
-  const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-  if (!liffId) return false;
-
-  const { hostname, protocol } = window.location;
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return false;
-  }
-
-  if (protocol !== "https:") {
-    return false;
-  }
-
-  return true;
-}
-
 export default function HomePage() {
   const { user, member, config, loadUser, loadMember, isLiffLoading } =
     useAppStore();
@@ -77,22 +59,6 @@ export default function HomePage() {
 
   const canOpenSignup = Boolean(user) && !isPlaceholderUser(user);
 
-  useEffect(() => {
-    if (member || canOpenSignup) {
-      return;
-    }
-
-    if (!canRedirectToLineLogin()) {
-      return;
-    }
-
-    const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-    const currentUrl = window.location.href;
-    const loginUrl = `https://liff.line.me/${liffId}?redirect=${encodeURIComponent(currentUrl)}`;
-
-    window.location.replace(loginUrl);
-  }, [canOpenSignup, member, user]);
-
   // Loading state
   if (isLiffLoading || loadUser || !config) {
     return (
@@ -116,10 +82,10 @@ export default function HomePage() {
                 กำลังพาไปเข้าสู่ระบบ LINE
               </p>
               <p className="text-xs text-gray-500">
-                หากไม่เด้งอัตโนมัติ กรุณาเปิดผ่าน LINE login อีกครั้ง
+                หากยังไม่เข้าสู่ระบบ กรุณาเปิดผ่าน LINE login
               </p>
             </div>
-            {canRedirectToLineLogin() ? (
+            {process.env.NEXT_PUBLIC_LIFF_ID ? (
               <a
                 href={`https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID}`}
                 className="inline-flex items-center justify-center rounded-full border border-[#d4d9e1] bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
@@ -167,7 +133,7 @@ export default function HomePage() {
               <p className="mt-2 text-sm leading-6 text-gray-600">
                 หากยังไม่ได้เข้าสู่ระบบ LINE จริง ระบบจะยังไม่เปิดหน้าสมัครสมาชิก
               </p>
-              {canRedirectToLineLogin() ? (
+              {process.env.NEXT_PUBLIC_LIFF_ID ? (
                 <a
                   href={`https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID}`}
                   className="mt-4 inline-flex items-center justify-center rounded-full border border-[#d4d9e1] bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
