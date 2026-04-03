@@ -687,8 +687,8 @@ export default function AttendancePage() {
     <main className="min-h-screen bg-[#F9F9FA] px-2.5 pt-8 pb-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_rgba(249,249,250,0))]" />
 
-      <div className="relative mx-auto max-w-xl">
-      <div className="mx-auto mb-3 max-w-lg rounded-[22px] bg-[#1a2232]/76 px-3.5 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
+      <div className="relative mx-auto max-w-lg">
+      <div className="mb-3 rounded-[22px] bg-[#1a2232]/76 px-3.5 py-3 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
         <UserProfile
           pictureUrl={user.pictureUrl}
           displayName={employee?.nickname || user.displayName}
@@ -722,7 +722,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Navigation tabs */}
-      <div className="mx-[3px] rounded-[20px] bg-white/94 px-0.5 py-1.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="rounded-[19px] bg-white/94 px-0.5 py-1.5 shadow-[0_18px_42px_rgba(15,23,42,0.07)] backdrop-blur-xl">
       <Tabs
         aria-label="Tabs with underline"
         variant="underline"
