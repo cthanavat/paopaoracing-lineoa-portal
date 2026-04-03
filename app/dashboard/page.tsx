@@ -1203,9 +1203,9 @@ export default function DashboardPage() {
 
       <section className="relative mx-auto max-w-7xl px-3 py-3 sm:px-4 lg:py-4">
         <section className="mb-3 rounded-[22px] border border-[#d4d9e1] bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)] lg:mb-4 lg:p-4">
-          <div className="grid gap-2 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)] lg:items-stretch">
-            <div className="grid gap-2">
-              <div className="rounded-[18px] border border-[#d1d6de] bg-[#F7F7F8] px-3 py-2.5">
+          <div className="grid gap-2 lg:grid-cols-2 lg:items-stretch">
+            <div className="grid gap-2 lg:h-full lg:grid-rows-2">
+              <div className="rounded-[18px] border border-[#d1d6de] bg-[#F7F7F8] px-3 py-2.5 lg:h-full">
                 <p className="text-[10px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
                   Today
                 </p>
@@ -1214,7 +1214,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <label className="flex items-center gap-2 rounded-[18px] border border-[#d1d6de] bg-[#F7F7F8] px-3 py-2.5 text-xs text-gray-600">
+              <label className="flex items-center gap-2 rounded-[18px] border border-[#d1d6de] bg-[#F7F7F8] px-3 py-2.5 text-xs text-gray-600 lg:h-full">
                 <HiMagnifyingGlass className="h-4 w-4 shrink-0 text-gray-400" />
                 <input
                   value={searchTerm}
@@ -1238,7 +1238,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowTodayPaymentModal(true)}
-              className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:flex lg:flex-col lg:items-end lg:justify-between lg:p-4"
+              className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:flex lg:h-full lg:flex-col lg:items-end lg:justify-between lg:p-4"
             >
               <div className="flex items-center justify-between gap-2 self-stretch">
                 <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
