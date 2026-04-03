@@ -1759,10 +1759,10 @@ export default function DashboardPage() {
               behavior: "smooth",
             })
           }
-          className="fixed right-3 bottom-24 z-40 rounded-full border border-[#cfe0fb] bg-[#eef5ff] p-3 text-[#3f6da8] shadow-[0_14px_30px_rgba(72,109,168,0.18)] backdrop-blur"
+          className="fixed right-3 bottom-24 z-40 rounded-full bg-[#1a2232]/76 p-3 text-slate-100 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68"
           aria-label="Back to top"
         >
-          <HiArrowUp className="h-4 w-4" />
+          <HiArrowUp className="h-4 w-4 text-[#8fc2ff]" />
         </button>
       ) : null}
 

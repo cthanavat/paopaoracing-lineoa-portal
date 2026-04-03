@@ -12,6 +12,16 @@ const kanit = Kanit({
 export const metadata = {
   title: "Paopao Racing Line OA Portal",
   description: "This site use for customer of Paopao Racing Shop",
+  icons: {
+    icon: "/pprs-logo-2024.png",
+    shortcut: "/pprs-logo-2024.png",
+    apple: "/pprs-logo-2024.png",
+  },
+  openGraph: {
+    title: "Paopao Racing Line OA Portal",
+    description: "This site use for customer of Paopao Racing Shop",
+    images: ["/pprs-logo-2024.png"],
+  },
 };
 
 interface RootLayoutProps {
