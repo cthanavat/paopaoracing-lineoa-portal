@@ -12,9 +12,12 @@ import {
   HiArrowUp,
   HiBanknotes,
   HiCalendarDays,
+  HiCreditCard,
   HiMiniXMark,
   HiMagnifyingGlass,
-  HiMiniClock,
+  HiReceiptPercent,
+  HiShoppingBag,
+  HiWrenchScrewdriver,
 } from "react-icons/hi2";
 import UserProfile from "../components/UserProfile";
 import Loader from "../components/Loader";
@@ -236,8 +239,8 @@ function getPaymentDate(row: BillPaymentRow) {
 
 function getPaymentMethod(row: BillPaymentRow) {
   return normalizeStatus(
-    row.payment_method ||
-      row.payment_type ||
+    row.payment_type ||
+      row.payment_method ||
       row.pay_type ||
       row.payment_channel ||
       row.channel ||
@@ -249,35 +252,7 @@ function getPaymentMethod(row: BillPaymentRow) {
 }
 
 function categorizePaymentMethod(value: string) {
-  const normalized = normalizeStatus(value).toLowerCase();
-
-  if (
-    normalized.includes("เงินสด") ||
-    normalized.includes("cash")
-  ) {
-    return "เงินสด";
-  }
-
-  if (
-    normalized.includes("สแกน") ||
-    normalized.includes("scan") ||
-    normalized.includes("qr") ||
-    normalized.includes("พร้อมเพย์") ||
-    normalized.includes("โอน")
-  ) {
-    return "สแกน";
-  }
-
-  if (
-    normalized.includes("เครดิต") ||
-    normalized.includes("credit") ||
-    normalized.includes("บัตร") ||
-    normalized.includes("card")
-  ) {
-    return "เครดิต";
-  }
-
-  return "อื่นๆ";
+  return normalizeStatus(value) || "ไม่ระบุ";
 }
 
 function normalizeBill(
@@ -913,7 +888,7 @@ export default function DashboardPage() {
 
             entry.amount += amount;
             entry.count += 1;
-            if (rawMethod && bucket === "อื่นๆ") {
+            if (rawMethod && bucket === rawMethod) {
               entry.details.add(rawMethod);
             }
             todayMethodMap.set(bucket, entry);
@@ -924,12 +899,10 @@ export default function DashboardPage() {
           (sum, entry) => sum + entry.amount,
           0,
         );
-        const todayBreakdown: PaymentMethodSummary[] = [
-          "เงินสด",
-          "สแกน",
-          "เครดิต",
-          "อื่นๆ",
-        ]
+        const todayBreakdown: PaymentMethodSummary[] = Array.from(
+          todayMethodMap.keys(),
+        )
+          .sort((a, b) => a.localeCompare(b, "th"))
           .map((label): PaymentMethodSummary => {
             const entry = todayMethodMap.get(label);
             return {
@@ -937,7 +910,7 @@ export default function DashboardPage() {
               amount: entry?.amount || 0,
               count: entry?.count || 0,
               details:
-                label === "อื่นๆ" && entry && entry.details.size > 0
+                entry && entry.details.size > 0
                   ? Array.from(entry.details).join(", ")
                   : undefined,
             };
@@ -1265,11 +1238,11 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowTodayPaymentModal(true)}
-              className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:flex lg:flex-col lg:justify-between lg:p-4"
+              className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:flex lg:flex-col lg:items-end lg:justify-between lg:p-4"
             >
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-700">ยอดเงินที่รับชำระวันนี้</p>
+              <div className="flex items-center justify-between gap-2 self-stretch">
                 <HiBanknotes className="h-4 w-4 text-[#2f6b45]" />
+                <p className="text-xs text-gray-700">ยอดเงินที่รับชำระวันนี้</p>
               </div>
               <p className="mt-2 text-2xl font-semibold text-[#2f6b45] lg:text-[2rem]">
                 {formatCurrency(todayReceivedAmount)}
@@ -1291,11 +1264,11 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(todaySectionRef)}
-                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#c8ced8] hover:bg-[#fcfcfd] lg:min-h-[108px] lg:p-2.5"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
+                  <HiWrenchScrewdriver className="h-4 w-4 text-[#4f6893]" />
                   <p className="text-xs text-gray-700">งานวันนี้</p>
-                  <HiCalendarDays className="h-4 w-4 text-[#4f6893]" />
                 </div>
                 <p className="mt-1 text-[1.45rem] font-semibold text-[#4f6893]">
                   {todayJobsCount} บิล
@@ -1308,11 +1281,11 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(todaySectionRef)}
-                className="rounded-[18px] border border-[#d7d1cc] bg-[#F7F7F8] p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cbc2bb] hover:bg-[#faf6f2] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#d7d1cc] bg-[#F7F7F8] p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cbc2bb] hover:bg-[#faf6f2] lg:min-h-[108px] lg:p-2.5"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
+                  <HiReceiptPercent className="h-4 w-4 text-[#a35d33]" />
                   <p className="text-xs text-gray-700">ค่าใช้จ่าย</p>
-                  <HiMiniClock className="h-4 w-4 text-[#a35d33]" />
                 </div>
                 <p className="mt-1 text-[1.45rem] font-semibold text-[#a35d33]">
                   {installBills.length} บิล
@@ -1325,11 +1298,11 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => scrollToSection(orderSectionRef, "order")}
-                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#d0cbc4] hover:bg-[#fefcf7] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#d0cbc4] hover:bg-[#fefcf7] lg:min-h-[108px] lg:p-2.5"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
+                  <HiShoppingBag className="h-4 w-4 text-[#8b6a24]" />
                   <p className="text-xs text-gray-700">สั่งของ</p>
-                  <HiMiniClock className="h-4 w-4 text-[#8b6a24]" />
                 </div>
                 <p className="mt-1 text-[1.45rem] font-semibold text-[#8b6a24]">
                   {orderBills.length} บิล
@@ -1344,11 +1317,11 @@ export default function DashboardPage() {
                 onClick={() =>
                   scrollToSection(paymentDueSectionRef, "paymentDue")
                 }
-                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cdc6ea] hover:bg-[#faf8ff] lg:min-h-[108px] lg:p-2.5"
+                className="rounded-[18px] border border-[#d4d9e1] bg-white p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.04)] transition hover:border-[#cdc6ea] hover:bg-[#faf8ff] lg:min-h-[108px] lg:p-2.5"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
+                  <HiCreditCard className="h-4 w-4 text-[#6558a8]" />
                   <p className="text-xs text-gray-700">ค้างชำระ</p>
-                  <HiMiniClock className="h-4 w-4 text-[#6558a8]" />
                 </div>
                 <p className="mt-1 text-[1.45rem] font-semibold text-[#6558a8]">
                   {paymentDueBills.length} บิล
@@ -1681,7 +1654,7 @@ export default function DashboardPage() {
 
       {showTodayPaymentModal ? (
         <div
-          className="fixed inset-0 z-50 flex items-end bg-black/20 px-3 py-4 sm:items-center sm:justify-center"
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/20 px-3 pt-4 pb-24"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setShowTodayPaymentModal(false);
@@ -1689,44 +1662,45 @@ export default function DashboardPage() {
           }}
         >
           <div
-            className="w-full max-w-md rounded-[22px] border border-[#d4d9e1] bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.14)]"
+            className="relative w-full max-w-[340px] rounded-[22px] border border-[#d3dae5]/80 bg-white/58 p-3.5 shadow-[0_18px_40px_rgba(15,23,42,0.16),0_4px_14px_rgba(15,23,42,0.08)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/46"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(255,255,255,0.14))]" />
+            <div className="relative flex items-start justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
                   Today
                 </p>
-                <h3 className="mt-1 text-base font-semibold text-gray-900">
+                <h3 className="mt-0.5 text-[15px] font-semibold text-gray-900">
                   ยอดเงินที่รับชำระวันนี้
                 </h3>
-                <p className="mt-1 text-xs text-gray-600">
-                  สรุปตามช่องทางการรับเงินของวันที่ {formatDateFromDate(today)}
+                <p className="mt-0.5 text-[11px] text-gray-500">
+                  {formatDateFromDate(today)}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTodayPaymentModal(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f6f8] text-gray-500 transition hover:bg-[#e9edf2] hover:text-gray-700"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f4f6f8] text-gray-500 transition hover:bg-[#e9edf2] hover:text-gray-700"
                 aria-label="ปิดรายละเอียดการรับเงิน"
               >
-                <HiMiniXMark className="h-4 w-4" />
+                <HiMiniXMark className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="relative mt-3 space-y-1.5">
               {todayPaymentBreakdown.length > 0 ? (
                 todayPaymentBreakdown.map((entry) => (
                   <div
                     key={entry.label}
-                    className="rounded-[18px] border border-[#d7dde6] bg-[#f8fafc] px-3 py-2.5"
+                    className="rounded-[16px] border border-[#d7dde6] bg-white/82 px-3 py-2"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
                           {entry.label}
                         </p>
-                        <p className="mt-0.5 text-xs text-gray-500">
+                        <p className="text-[11px] text-gray-500">
                           {entry.count} รายการ
                         </p>
                       </div>
@@ -1734,23 +1708,18 @@ export default function DashboardPage() {
                         {formatCurrency(entry.amount)}
                       </p>
                     </div>
-                    {entry.details ? (
-                      <p className="mt-1 text-xs text-gray-500">
-                        {entry.details}
-                      </p>
-                    ) : null}
                   </div>
                 ))
               ) : (
-                <div className="rounded-[18px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
+                <div className="rounded-[16px] bg-[#f7f7f8] px-3 py-4 text-xs text-gray-500">
                   วันนี้ยังไม่มีรายการรับชำระ
                 </div>
               )}
             </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-[#e1e6ed] pt-3">
+            <div className="relative mt-3 flex items-center justify-between border-t border-[#e1e6ed] pt-2.5">
               <p className="text-sm text-gray-600">ยอดรวมวันนี้</p>
-              <p className="text-base font-semibold text-[#2f6b45]">
+              <p className="text-[15px] font-semibold text-[#2f6b45]">
                 {formatCurrency(todayReceivedAmount)}
               </p>
             </div>

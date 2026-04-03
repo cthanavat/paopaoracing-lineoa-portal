@@ -5,10 +5,7 @@ import React from "react";
 const Loader: React.FC = () => {
   return (
     <div className="loader-shell" role="status" aria-live="polite">
-      <div className="loader-orbit">
-        <div className="loader-core" />
-      </div>
-      <p className="loader-label">Loading</p>
+      <div className="loader-spinner" />
     </div>
   );
 };

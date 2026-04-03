@@ -41,8 +41,8 @@ const BottomNav: React.FC = () => {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 flex justify-center px-3">
-      <nav className="pointer-events-auto relative flex w-full max-w-[340px] items-center gap-1 rounded-[22px] border border-white/70 bg-white/72 p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.16),0_4px_14px_rgba(15,23,42,0.08)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/62">
-        <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(180deg,rgba(255,255,255,0.55),rgba(255,255,255,0.18))]" />
+      <nav className="pointer-events-auto relative flex w-full max-w-[340px] items-center gap-1 rounded-[22px] bg-[#1a2232]/76 p-1.5 shadow-[0_22px_48px_rgba(2,6,23,0.42),0_8px_22px_rgba(2,6,23,0.22),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#1a2232]/68">
+        <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.03))]" />
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -56,12 +56,12 @@ const BottomNav: React.FC = () => {
               href={item.href}
               className={`relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-[18px] px-2 py-2 text-[11px] transition ${
                 isActive
-                  ? "bg-white/88 text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.78),0_8px_18px_rgba(15,23,42,0.14)]"
-                  : "text-gray-700 hover:bg-white/58 hover:text-gray-900"
+                  ? "border border-white/16 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_22px_rgba(2,6,23,0.18)]"
+                  : "border border-transparent text-slate-300 hover:bg-white/7 hover:text-white"
               }`}
             >
               <Icon
-                className={`h-5 w-5 ${isActive ? "text-blue-700" : "text-gray-600"}`}
+                className={`h-5 w-5 ${isActive ? "text-[#8fc2ff]" : "text-slate-300"}`}
               />
               <span className="mt-1 truncate font-medium">{item.label}</span>
             </Link>
