@@ -57,7 +57,7 @@ const MemberView: React.FC<MemberViewProps> = ({
     <Tabs
       aria-label="Tabs with underline"
       variant="underline"
-      className="apple-tabs flex min-w-2xs items-center-safe pt-0"
+      className="apple-tabs flex items-center-safe pt-0"
     >
       <TabItem
         active
@@ -65,35 +65,38 @@ const MemberView: React.FC<MemberViewProps> = ({
         icon={HiUserCircle}
         className="flex items-center justify-center"
       >
-        <div className="flex flex-col items-center">
-          <div className="my-0.5 flex min-w-2xs justify-center">
-            <div className="w-full rounded-[18px] border border-[#d4d9e1] bg-white px-3 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-              <p className="text-xs font-medium tracking-[0.24em] text-gray-400 uppercase">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-3 px-1">
+          <section className="rounded-[18px] border border-[#d4d9e1] bg-white px-3.5 py-3.5 shadow-[0_16px_42px_rgba(15,23,42,0.05)]">
+              <p className="text-[11px] font-medium tracking-[0.22em] text-gray-400 uppercase">
                 Paopao Racing
               </p>
-              <div className="mt-2 space-y-0">
-                <p className="text-base font-semibold tracking-tight text-gray-950">
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-[1.02rem] font-semibold tracking-tight text-gray-950">
                   {member.name}
-                </p>
-                <p className="text-[13px] text-gray-500">{member.phone}</p>
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-gray-500">{member.phone}</p>
+                </div>
+                <div className="shrink-0 rounded-full border border-[#d4d9e1] bg-[#f8f8fa] px-3 py-1 text-[11px] font-medium text-gray-600">
+                  Member
+                </div>
               </div>
-              <div className="mt-2 inline-flex rounded-full border border-[#d4d9e1] bg-[#f8f8fa] px-3 py-1 text-[11px] font-medium text-gray-600">
-                Member
-              </div>
-            </div>
-          </div>
+          </section>
 
-          <div className="mt-2 w-full rounded-[18px] border border-[#d4d9e1] bg-[#fcfcfd] p-1.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
-            <div className="mb-1.5">
+          <section className="rounded-[18px] border border-[#d4d9e1] bg-[#fcfcfd] px-2.5 py-2.5 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+            <div className="mb-2 flex items-center justify-between gap-3">
               <p className="text-[11px] font-medium tracking-[0.18em] text-gray-400 uppercase">
                 Quick Actions
               </p>
+              {!isActionEnabled ? (
+                <span className="text-[11px] text-gray-400">LINE app only</span>
+              ) : null}
             </div>
 
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex flex-col items-center gap-2">
                 <button
                   onClick={() => handleServiceClick("เข้ารับบริการ")}
-                  className="flex min-h-9 w-3/4 items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-4 py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-10 w-3/4 items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-4 py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!isActionEnabled}
                 >
                   เข้ารับบริการ
@@ -101,13 +104,13 @@ const MemberView: React.FC<MemberViewProps> = ({
 
                 <button
                   onClick={() => handleServiceClick("สลับยาง")}
-                  className="flex min-h-9 w-3/4 items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-4 py-1.5 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-10 w-3/4 items-center justify-center rounded-full border border-white/14 bg-[#1a2232] px-4 py-2 text-sm font-medium text-slate-50 shadow-[0_14px_32px_rgba(2,6,23,0.18)] transition duration-200 hover:bg-[#222d40] focus:bg-[#222d40] focus-visible:ring-2 focus-visible:ring-[#8fc2ff] focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!isActionEnabled}
                 >
                   สลับยาง
                 </button>
             </div>
-          </div>
+          </section>
         </div>
       </TabItem>
 

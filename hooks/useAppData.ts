@@ -7,6 +7,7 @@ export function useAppData() {
   const {
     user,
     config,
+    member,
     setConfig,
     memberAll,
     setMember,
@@ -17,6 +18,7 @@ export function useAppData() {
     setLoadHistory,
     firstLoad,
     setFirstLoad,
+    employee,
     employees,
     setEmployee,
     setEmployees,
@@ -38,16 +40,6 @@ export function useAppData() {
       isEmployeeActive(active) &&
       ["admin", "manager", "supervisor"].includes(normalizedRole)
     );
-  };
-
-  const redirectPrivilegedEmployeeToDashboard = (
-    role?: string,
-    active?: string,
-  ) => {
-    if (canAccessDashboard(role, active) && firstLoad && pathname === "/") {
-      setFirstLoad(false);
-      router.push("/dashboard");
-    }
   };
 
   // Fetch Config
@@ -200,11 +192,6 @@ export function useAppData() {
           if (foundEmployee) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            redirectPrivilegedEmployeeToDashboard(
-              (foundEmployee as any).role,
-              (foundEmployee as any).active,
-            );
           }
           return;
         }
@@ -226,11 +213,6 @@ export function useAppData() {
             // It's an employee!
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setEmployee(foundEmployee as any);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            redirectPrivilegedEmployeeToDashboard(
-              (foundEmployee as any).role,
-              (foundEmployee as any).active,
-            );
           }
         }
       } catch (err) {
@@ -252,6 +234,23 @@ export function useAppData() {
     setEmployee,
     pathname,
   ]);
+
+  useEffect(() => {
+    if (!firstLoad || pathname !== "/" || !employee || !isEmployeeActive(employee.active)) {
+      return;
+    }
+
+    if (canAccessDashboard(employee.role, employee.active)) {
+      setFirstLoad(false);
+      router.push("/dashboard");
+      return;
+    }
+
+    if (member) {
+      setFirstLoad(false);
+      router.push("/attendance");
+    }
+  }, [employee, firstLoad, member, pathname, router, setFirstLoad]);
 
   return { error };
 }
