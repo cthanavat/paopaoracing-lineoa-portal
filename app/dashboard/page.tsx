@@ -508,8 +508,8 @@ const BillCard = memo(function BillCard({
           >
             {bill.remainingAmount > 0 ? (
               <span className="inline-flex items-center gap-1.5 font-medium">
-                <span className="text-gray-500">คงเหลือ</span>
-                <span className="text-[#9a6d14]">{bill.remainingLabel}</span>
+                <span className="text-[#c24141]">ค้างจ่าย</span>
+                <span className="text-[#c24141]">{bill.remainingLabel}</span>
                 <span className="text-gray-400">/</span>
                 <span className="text-[#486da8]">{bill.totalLabel}</span>
               </span>
