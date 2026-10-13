@@ -96,7 +96,7 @@ export const useAppStore = create<AppState>((set) => ({
   isLiffLoading: true,
   isInClient: false, // Default to false
   hasHydrated: false,
-  loadingEmployees: false,
+  loadingEmployees: true,
   firstLoad: true,
 
   setFirstLoad: (firstLoad) => set({ firstLoad }),

@@ -48,13 +48,8 @@ function isExpired(decodedIdToken: DecodedIdToken | null | undefined) {
 export async function ensureFreshLiffSession() {
   const liffModule = await import("@line/liff");
   const liff = liffModule.default;
-  const {
-    isLoggedIn,
-    isInClient,
-    idToken,
-    decodedIdToken,
-    hasExpiredToken,
-  } = await getLiffSessionSnapshot();
+  const { isLoggedIn, isInClient, idToken, decodedIdToken, hasExpiredToken } =
+    await getLiffSessionSnapshot();
 
   if (isLoggedIn && idToken && !hasExpiredToken) {
     return {

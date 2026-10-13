@@ -48,7 +48,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       </div>
       <div className="min-w-0 space-y-0.5">
         <h2
-          className={`${compact ? "text-[15px]" : "text-[1.05rem]"} truncate font-semibold leading-tight ${
+          className={`${compact ? "text-[15px]" : "text-[1.05rem]"} truncate leading-tight font-semibold ${
             isNavTone ? "text-white" : "text-gray-950"
           }`}
         >

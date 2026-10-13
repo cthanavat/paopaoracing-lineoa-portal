@@ -37,6 +37,7 @@ export interface LeaveRecord {
 }
 
 export interface AllEmployeeLeave {
+  employeeId: string;
   employeeName: string;
   leaveType: string;
   leaveReason: string;

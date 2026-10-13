@@ -2,14 +2,18 @@ import { useEffect, useState } from "react";
 import { useAppStore, HistoryItem } from "@/store/useAppStore";
 import { usePathname, useRouter } from "next/navigation";
 import { authenticatedFetch } from "@/lib/utils/apiClient";
+import { getHistoryTimestamp } from "@/lib/historyDate.mjs";
+
+const normalizeValue = (value?: string) => (value || "").trim().toLowerCase();
+
+const isEmployeeActive = (active?: string) =>
+  ["true", "1", "yes", "active"].includes(normalizeValue(active));
 
 export function useAppData() {
   const {
     user,
     config,
-    member,
     setConfig,
-    memberAll,
     setMember,
     setMemberAll,
     historyList,
@@ -19,28 +23,14 @@ export function useAppData() {
     firstLoad,
     setFirstLoad,
     employee,
-    employees,
     setEmployee,
     setEmployees,
+    setLoadingEmployees,
     isLiffReady,
   } = useAppStore();
   const router = useRouter();
   const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
-
-  const normalizeValue = (value?: string) =>
-    (value || "").trim().toLowerCase();
-
-  const isEmployeeActive = (active?: string) =>
-    ["true", "1", "yes", "active"].includes(normalizeValue(active));
-
-  const canAccessDashboard = (role?: string, active?: string) => {
-    const normalizedRole = normalizeValue(role);
-    return (
-      isEmployeeActive(active) &&
-      ["admin", "manager", "supervisor"].includes(normalizedRole)
-    );
-  };
 
   // Fetch Config
   useEffect(() => {
@@ -63,7 +53,7 @@ export function useAppData() {
           }, {});
           setConfig(dataJson);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error: Get config:", err);
         setError("Failed to load configuration");
       }
@@ -80,41 +70,34 @@ export function useAppData() {
       if (!config?.userLine) return;
 
       try {
-        const existingMembers = memberAll;
-        if (existingMembers.length > 0) {
-          if (user?.userId) {
-            const existingMember = existingMembers.find(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (m: any) => m.userId === user.userId,
-            );
-            if (existingMember) {
-              setMember(existingMember);
-            }
-          }
+        // Membership can be revoked in the Sheet. Always revalidate and clear
+        // stale state instead of trusting the in-memory member list.
+        const res = await authenticatedFetch(
+          "/api/gSheet/get",
+          {
+            method: "POST",
+            body: JSON.stringify({ resource: "userLine" }),
+          },
+          { requireVerifiedToken: true },
+        );
+
+        const result = await res.json();
+        if (!res.ok || !Array.isArray(result.data)) {
+          setMemberAll([]);
+          setMember(null);
           return;
         }
 
-        const res = await authenticatedFetch("/api/gSheet/get", {
-          method: "POST",
-          body: JSON.stringify({ resource: "userLine" }),
-        });
-
-        const result = await res.json();
-        if (result.data) {
-          setMemberAll(result.data);
-
-          if (user?.userId) {
-            const userMember = result.data.find(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (m: any) => m.userId === user.userId,
-            );
-            if (userMember) {
-              setMember(userMember);
-            }
-          }
-        }
+        setMemberAll(result.data);
+        const userMember = result.data.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (record: any) => record.userId === user?.userId,
+        );
+        setMember(userMember || null);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
+        setMemberAll([]);
+        setMember(null);
         console.error("Failed to load members:", err);
         setError("Failed to load members");
       } finally {
@@ -124,14 +107,17 @@ export function useAppData() {
 
     if (user && config?.userLine) {
       fetchMembers();
+    } else if (isLiffReady) {
+      setMemberAll([]);
+      setMember(null);
     }
   }, [
-    memberAll,
     user,
     config,
     setMemberAll,
     setMember,
     setLoadMember,
+    isLiffReady,
     firstLoad,
     setFirstLoad,
     router,
@@ -158,8 +144,8 @@ export function useAppData() {
             .filter((bill: HistoryItem) => bill.userId === user.userId)
             .sort(
               (a: HistoryItem, b: HistoryItem) =>
-                new Date(b.bill_date).getTime() -
-                new Date(a.bill_date).getTime(),
+                getHistoryTimestamp(b.bill_date) -
+                getHistoryTimestamp(a.bill_date),
             );
           setHistoryList(userHistory);
         }
@@ -182,75 +168,77 @@ export function useAppData() {
     async function fetchEmployees() {
       if (!config?.employees) return;
 
+      setLoadingEmployees(true);
       try {
-        if (employees.length > 0) {
-          const foundEmployee = employees.find(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (e: any) => e.userId === user?.userId,
-          );
+        // Employee access is security-sensitive: always revalidate against the
+        // server instead of trusting the in-memory employee list.
+        const res = await authenticatedFetch(
+          "/api/gSheet/get",
+          {
+            method: "POST",
+            body: JSON.stringify({ resource: "employees" }),
+          },
+          { requireVerifiedToken: true },
+        );
 
-          if (foundEmployee) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setEmployee(foundEmployee as any);
-          }
+        const result = await res.json();
+        if (!res.ok || !Array.isArray(result.data)) {
+          setEmployees([]);
+          setEmployee(null);
           return;
         }
 
-        const res = await authenticatedFetch("/api/gSheet/get", {
-          method: "POST",
-          body: JSON.stringify({ resource: "employees" }),
-        });
+        setEmployees(result.data);
+        const foundEmployee = result.data.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (e: any) => e.userId === user?.userId && isEmployeeActive(e.active),
+        );
 
-        const result = await res.json();
-        if (result.data) {
-          setEmployees(result.data);
-          const foundEmployee = result.data.find(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (e: any) => e.userId === user?.userId,
-          );
-
-          if (foundEmployee) {
-            // It's an employee!
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setEmployee(foundEmployee as any);
-          }
-        }
+        // Clearing stale authorization is as important as setting it.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setEmployee((foundEmployee as any) || null);
       } catch (err) {
+        setEmployees([]);
+        setEmployee(null);
         console.error("Failed to fetch employees:", err);
+      } finally {
+        setLoadingEmployees(false);
       }
     }
 
     if (user && config?.employees) {
       fetchEmployees();
+    } else if (isLiffReady) {
+      setEmployees([]);
+      setEmployee(null);
+      setLoadingEmployees(false);
     }
   }, [
     user,
     config,
-    employees,
     setEmployees,
     setFirstLoad,
     firstLoad,
     router,
     setEmployee,
+    setLoadingEmployees,
     pathname,
+    isLiffReady,
   ]);
 
   useEffect(() => {
-    if (!firstLoad || pathname !== "/" || !employee || !isEmployeeActive(employee.active)) {
+    if (
+      !firstLoad ||
+      pathname !== "/" ||
+      !employee ||
+      !isEmployeeActive(employee.active)
+    ) {
       return;
     }
 
-    if (canAccessDashboard(employee.role, employee.active)) {
-      setFirstLoad(false);
-      router.push("/dashboard");
-      return;
-    }
-
-    if (member) {
-      setFirstLoad(false);
-      router.push("/attendance");
-    }
-  }, [employee, firstLoad, member, pathname, router, setFirstLoad]);
+    setFirstLoad(false);
+    router.push("/attendance");
+  }, [employee, firstLoad, pathname, router, setFirstLoad]);
 
   return { error };
 }

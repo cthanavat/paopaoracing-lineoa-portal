@@ -94,13 +94,8 @@ export function useLiff() {
         await liffModule.default.init({
           liffId,
         });
-        const {
-          liff,
-          isInClient,
-          isLoggedIn,
-          idToken,
-          hasExpiredToken,
-        } = await getLiffSessionSnapshot();
+        const { liff, isInClient, isLoggedIn, idToken, hasExpiredToken } =
+          await getLiffSessionSnapshot();
 
         debugLog("[LIFF] init:ready", {
           isInClient,
@@ -174,9 +169,11 @@ export function useLiff() {
     initLiff();
   }, [setUser, setLoadUser, setIsLiffReady, setIsLiffLoading, setIsInClient]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (message: unknown) => {
     if (shouldUseBrowserAuth()) {
-      throw new Error("ต้องเปิดผ่าน LIFF บนมือถือก่อน จึงจะส่งข้อความเข้า LINE ได้");
+      throw new Error(
+        "ต้องเปิดผ่าน LIFF บนมือถือก่อน จึงจะส่งข้อความเข้า LINE ได้",
+      );
     }
 
     if (!isLiffReady) {
@@ -184,15 +181,19 @@ export function useLiff() {
     }
 
     try {
-      const {
-        liff,
-        isInClient,
-        isLoggedIn,
-        idToken,
-      } = await ensureFreshLiffSession();
+      const { liff, isInClient, isLoggedIn, idToken } =
+        await ensureFreshLiffSession();
+
+      const liffMessage =
+        typeof message === "string" ? { type: "text", text: message } : message;
 
       debugLog("[LIFF] sendMessages:attempt", {
-        text,
+        messageType:
+          typeof liffMessage === "object" &&
+          liffMessage &&
+          "type" in liffMessage
+            ? liffMessage.type
+            : "unknown",
         isInClient,
         isLoggedIn,
         hasIdToken: Boolean(idToken),
@@ -206,8 +207,17 @@ export function useLiff() {
         throw new Error("กรุณาเข้าสู่ระบบ LINE ก่อน");
       }
 
-      await liff.sendMessages([{ type: "text", text }]);
-      debugLog("[LIFF] sendMessages:success", { text });
+      await liff.sendMessages([
+        liffMessage as Parameters<typeof liff.sendMessages>[0][number],
+      ]);
+      debugLog("[LIFF] sendMessages:success", {
+        messageType:
+          typeof liffMessage === "object" &&
+          liffMessage &&
+          "type" in liffMessage
+            ? liffMessage.type
+            : "unknown",
+      });
       return true;
     } catch (error) {
       console.error("Error sending message:", error);

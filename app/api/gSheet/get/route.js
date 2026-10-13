@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  getAuthorizedEmployeeByUserId,
   getSheetRows,
   mapRowsToObjects,
   resolveSheetResource,
@@ -9,17 +10,17 @@ import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
 const ALLOWED_READ_RESOURCES = new Set([
   "config",
   "userLine",
-  "bill_names",
-  "bill_payments",
   "history",
   "employees",
   "attendance",
   "employee_leaves",
 ]);
 
-const OPTIONAL_READ_RESOURCES = new Set([
-  "history",
-  "bill_payments",
+const OPTIONAL_READ_RESOURCES = new Set(["history", "employee_leaves"]);
+
+const EMPLOYEE_ONLY_RESOURCES = new Set([
+  "employees",
+  "attendance",
   "employee_leaves",
 ]);
 
@@ -41,6 +42,19 @@ export async function POST(request) {
       );
     }
 
+    let employeeAuthorization = null;
+    if (EMPLOYEE_ONLY_RESOURCES.has(resource)) {
+      employeeAuthorization = await getAuthorizedEmployeeByUserId(
+        auth.user.userId,
+      );
+      if (!employeeAuthorization) {
+        return NextResponse.json(
+          { success: false, error: "Active employee membership required" },
+          { status: 403 },
+        );
+      }
+    }
+
     const { sheetId, range } = await resolveSheetResource(resource);
     const rows = await getSheetRows(sheetId, range);
 
@@ -48,9 +62,47 @@ export async function POST(request) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    const data = mapRowsToObjects(rows);
+    let data = mapRowsToObjects(rows);
 
-    return NextResponse.json({ success: true, data });
+    if (resource === "config") {
+      data = data
+        .filter((row) => row.tableName)
+        .map((row) => ({ tableName: row.tableName }));
+    } else if (resource === "userLine" || resource === "history") {
+      data = data.filter((row) => row.userId === auth.user.userId);
+    } else if (resource === "employees") {
+      data = data
+        .filter(
+          (row) =>
+            row.userId === auth.user.userId ||
+            String(row.active || "")
+              .trim()
+              .toLowerCase() === "true",
+        )
+        .map((row) => {
+          if (row.userId === auth.user.userId) return row;
+          return {
+            employee_id: row.employee_id,
+            nickname: row.nickname || row.name || "",
+          };
+        });
+    } else if (resource === "attendance") {
+      data = data.filter(
+        (row) =>
+          row.employee_id === employeeAuthorization?.employee.employee_id,
+      );
+    } else if (resource === "employee_leaves") {
+      data = data.filter(
+        (row) =>
+          row.employee_id === employeeAuthorization?.employee.employee_id ||
+          row.status === "Approved",
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, data },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     const isMissingResourceError =
       typeof error?.message === "string" &&

@@ -1,8 +1,5 @@
 import { shouldUseBrowserAuth } from "@/lib/utils/authMode";
-import {
-  getBrowserAuthUser,
-  getStoredLineProfile,
-} from "@/lib/utils/browserAuthUser";
+import { getBrowserAuthUser } from "@/lib/utils/browserAuthUser";
 import { debugLog, isDebugEnabled } from "@/lib/utils/debug";
 import {
   ensureFreshLiffSession,
@@ -15,22 +12,22 @@ function encodeHeaderValue(value?: string) {
   return encodeURIComponent(value);
 }
 
+interface AuthenticatedFetchOptions {
+  requireVerifiedToken?: boolean;
+}
+
 export async function createAuthenticatedHeaders(
   init?: HeadersInit,
+  _options: AuthenticatedFetchOptions = {},
 ): Promise<Headers> {
+  void _options;
   const headers = new Headers(init);
 
   if (shouldUseBrowserAuth()) {
     const browserUser = getBrowserAuthUser();
 
-    headers.set(
-      "x-dev-auth-user-id",
-      browserUser.userId,
-    );
-    headers.set(
-      "x-dev-auth-name",
-      encodeHeaderValue(browserUser.displayName),
-    );
+    headers.set("x-dev-auth-user-id", browserUser.userId);
+    headers.set("x-dev-auth-name", encodeHeaderValue(browserUser.displayName));
 
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
@@ -39,25 +36,7 @@ export async function createAuthenticatedHeaders(
     return headers;
   }
 
-  const storedLineProfile = getStoredLineProfile();
-
-  if (storedLineProfile?.userId) {
-    headers.set("x-line-profile-user-id", storedLineProfile.userId);
-    headers.set(
-      "x-line-profile-name",
-      encodeHeaderValue(storedLineProfile.displayName),
-    );
-  }
-
   const liffSession = await getLiffSessionSnapshot();
-
-  if (
-    liffSession.hasExpiredToken &&
-    !liffSession.isInClient &&
-    storedLineProfile?.userId
-  ) {
-    return headers;
-  }
 
   if (!liffSession.idToken || liffSession.hasExpiredToken) {
     const { idToken } = await ensureFreshLiffSession();
@@ -80,9 +59,10 @@ export async function createAuthenticatedHeaders(
 export async function authenticatedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
+  options: AuthenticatedFetchOptions = {},
 ) {
   const sendRequest = async () => {
-    const headers = await createAuthenticatedHeaders(init?.headers);
+    const headers = await createAuthenticatedHeaders(init?.headers, options);
     const response = await fetch(input, { ...init, headers });
 
     return { headers, response };
@@ -114,10 +94,7 @@ export async function authenticatedFetch(
       body: bodyText,
     });
 
-    if (
-      !shouldUseBrowserAuth() &&
-      bodyText.includes("IdToken expired.")
-    ) {
+    if (!shouldUseBrowserAuth() && bodyText.includes("IdToken expired.")) {
       await refreshExpiredLiffSession();
     }
   }

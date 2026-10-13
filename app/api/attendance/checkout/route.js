@@ -3,7 +3,7 @@ import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { Buffer } from "buffer";
 import {
-  getEmployeeByUserId,
+  getAuthorizedEmployeeByUserId,
   getSheetName,
   resolveSheetResource,
 } from "@/lib/server/googleSheets";
@@ -17,11 +17,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const {
-      date,
-      checkOut,
-      workHours,
-    } = body;
+    const { date, checkOut, workHours } = body;
 
     if (!date || !checkOut || workHours === undefined || workHours === null) {
       return NextResponse.json(
@@ -30,15 +26,18 @@ export async function POST(request) {
       );
     }
 
-    const employee = await getEmployeeByUserId(authResult.user.userId);
+    const authorization = await getAuthorizedEmployeeByUserId(
+      authResult.user.userId,
+    );
 
-    if (!employee) {
+    if (!authorization) {
       return NextResponse.json(
-        { success: false, error: "Employee record not found" },
+        { success: false, error: "Active employee membership required" },
         { status: 403 },
       );
     }
 
+    const { employee } = authorization;
     const { sheetId, range } = await resolveSheetResource("attendance");
     const sheetName = getSheetName(range, "attendance");
 

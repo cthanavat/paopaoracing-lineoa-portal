@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 
 interface ModalProps {
@@ -19,68 +20,49 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75">
-      <div className="relative w-full max-w-sm p-4">
-        <div className="relative rounded-2xl bg-white p-4 shadow-sm md:p-5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-3 right-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900"
-          >
-            <svg
-              className="h-3 w-3"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 14 14"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-              />
-            </svg>
-            <span className="sr-only">Close modal</span>
-          </button>
-
-          <div className="text-center">
-            <svg
-              className="mx-auto mb-4 h-12 w-12 text-gray-400"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 20 20"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-              />
-            </svg>
-
-            {title && (
-              <h3 className="mb-2 text-lg font-normal text-gray-500">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-[3px]">
+      <div className="max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-sm overflow-y-auto overscroll-contain rounded-[26px] bg-[#18191a] px-3 py-3 shadow-2xl">
+        <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-[#777]" />
+        <div className="ticket-stack">
+          <section className="ticket-section bg-white px-5 pt-5 pb-7 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#eceef0] text-[#191a1c]">
+              <svg
+                className="h-7 w-7"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                  d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                />
+              </svg>
+            </div>
+            {title ? (
+              <h3 className="mt-4 text-xl font-black text-[#191a1c]">
                 {title}
               </h3>
-            )}
-
-            {message && <p className="text-md mb-5 text-gray-800">{message}</p>}
-
+            ) : null}
+            {message ? (
+              <p className="mt-2 text-sm leading-6 text-[#666]">{message}</p>
+            ) : null}
+          </section>
+          <section className="ticket-section bg-white px-5 pt-7 pb-5">
             <button
               onClick={() => {
                 if (onConfirm) onConfirm();
                 onClose();
               }}
               type="button"
-              className="text-md mr-2 inline-flex items-center rounded-full bg-gray-800 px-5 py-2 text-center font-medium text-white hover:bg-red-800 focus:ring-4 focus:ring-red-300 focus:outline-none"
+              className="min-h-12 w-full rounded-full bg-[#191a1c] px-5 text-base font-black text-white"
             >
-              OK
+              ตกลง
             </button>
-          </div>
+          </section>
         </div>
       </div>
     </div>

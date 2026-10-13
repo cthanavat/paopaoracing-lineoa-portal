@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   createSheetsClient,
-  getEmployeeByUserId,
+  getAuthorizedEmployeeByUserId,
+  getMemberSignupConflict,
   resolveSheetResource,
 } from "@/lib/server/googleSheets";
 import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
@@ -13,11 +14,7 @@ const ALLOWED_WRITE_RESOURCES = new Set([
 ]);
 
 function isPlaceholderUser(user) {
-  return (
-    !user ||
-    user.userId === "dev-user" ||
-    user.name === "Local Dev"
-  );
+  return !user || user.userId === "dev-user" || user.name === "Local Dev";
 }
 
 export async function POST(request) {
@@ -46,27 +43,49 @@ export async function POST(request) {
         return NextResponse.json(
           {
             success: false,
-            error:
-              "Cannot create member with placeholder development identity",
+            error: "Cannot create member with placeholder development identity",
           },
           { status: 403 },
         );
       }
 
+      const signupConflict = await getMemberSignupConflict({
+        userId: auth.user.userId,
+        phone: safeRow[2],
+      });
+      if (signupConflict) {
+        const employeeConflict = signupConflict === "employee_record";
+        return NextResponse.json(
+          {
+            success: false,
+            error: employeeConflict
+              ? "Employee-linked accounts require administrator approval"
+              : "Member account already exists",
+            code: signupConflict,
+          },
+          { status: 409 },
+        );
+      }
+
       safeRow[4] = auth.user.userId;
+      safeRow[5] = "9";
+      safeRow[6] = "member";
       notificationName = safeRow[1] || auth.user.name || "Member";
     }
 
     if (resource === "attendance" || resource === "employee_leaves") {
-      const employee = await getEmployeeByUserId(auth.user.userId);
+      const authorization = await getAuthorizedEmployeeByUserId(
+        auth.user.userId,
+      );
 
-      if (!employee) {
+      if (!authorization) {
         return NextResponse.json(
-          { success: false, error: "Employee record not found" },
+          { success: false, error: "Active employee membership required" },
           { status: 403 },
         );
       }
 
+      const { employee } = authorization;
       safeRow[2] = employee.employee_id;
       notificationName =
         employee.nickname ||
@@ -104,8 +123,7 @@ export async function POST(request) {
             token: process.env.PUSHOVER_TOKEN_ADMIN,
           }),
         });
-      }
-      else if (resource === "employee_leaves" && safeRow[8] === "Pending") {
+      } else if (resource === "employee_leaves" && safeRow[8] === "Pending") {
         const leaveOption = safeRow[4];
         const days = safeRow[5];
         const reason = safeRow[6];
