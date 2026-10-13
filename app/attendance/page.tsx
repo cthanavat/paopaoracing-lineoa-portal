@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { useAppData } from "../../hooks/useAppData";
 import { useLiff } from "../../hooks/useLiff";
 import { useAppStore } from "../../store/useAppStore";
@@ -610,14 +611,20 @@ export default function AttendancePage() {
           type: "success",
         });
         await loadAttendanceData();
+      } else if (result.code === "EVALUATION_REQUIRED" && result.redirect) {
+        window.location.assign(result.redirect);
+        return;
       } else {
-        throw new Error("Check-out failed");
+        throw new Error(result.error || "Check-out failed");
       }
     } catch (error) {
       console.error("❌ Check-out error:", error);
       setNotification({
         show: true,
-        message: "เกิดข้อผิดพลาดในการเช็คเอาท์",
+        message:
+          error instanceof Error
+            ? error.message
+            : "เกิดข้อผิดพลาดในการเช็คเอาท์",
         type: "error",
       });
     } finally {
@@ -880,6 +887,18 @@ export default function AttendancePage() {
                   </div>
 
                   <div className="mx-auto mt-3 w-full space-y-3">
+                    {["admin", "supervisor"].includes(
+                      normalizeValue(employee.role || employee.userRole),
+                    ) && (
+                      <Link
+                        href="/evaluation"
+                        className="flex min-h-12 w-full items-center justify-center rounded-full border border-[#1972bc] bg-[#eaf4fd] px-5 text-base font-black text-[#1972bc] transition-colors hover:bg-[#dceefe]"
+                      >
+                        <HiClipboardCheck className="mr-2 h-5 w-5" />
+                        ประเมินพนักงานประจำสัปดาห์
+                      </Link>
+                    )}
+
                     {!todayRecord && (
                       <Button
                         onClick={handleCheckIn}

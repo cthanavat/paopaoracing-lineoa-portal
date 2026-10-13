@@ -5,9 +5,12 @@ import { Buffer } from "buffer";
 import {
   getAuthorizedEmployeeByUserId,
   getSheetName,
+  getSheetRows,
+  mapRowsToObjects,
   resolveSheetResource,
 } from "@/lib/server/googleSheets";
 import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
+import { canUseEvaluation, getWeekContext } from "@/lib/server/evaluation";
 
 export async function POST(request) {
   const authResult = await requireVerifiedLineUser(request);
@@ -38,6 +41,42 @@ export async function POST(request) {
     }
 
     const { employee } = authorization;
+    const week = getWeekContext();
+    if (week.isFriday) {
+      const accessResource = await resolveSheetResource("evaluation_access");
+      const accessRows = mapRowsToObjects(
+        await getSheetRows(accessResource.sheetId, accessResource.range),
+      );
+      if (canUseEvaluation(employee, accessRows, "can_evaluate")) {
+        const submissionsResource = await resolveSheetResource(
+          "evaluation_submissions",
+        );
+        const submissions = mapRowsToObjects(
+          await getSheetRows(
+            submissionsResource.sheetId,
+            submissionsResource.range,
+          ),
+        );
+        const hasSubmitted = submissions.some(
+          (item) =>
+            item.week_key === week.weekKey &&
+            item.evaluator_employee_id === employee.employee_id &&
+            item.status === "submitted",
+        );
+        if (!hasSubmitted) {
+          return NextResponse.json(
+            {
+              success: false,
+              code: "EVALUATION_REQUIRED",
+              error: "กรุณาส่งแบบประเมินประจำสัปดาห์ก่อนเช็กเอาต์",
+              redirect: "/evaluation",
+            },
+            { status: 409 },
+          );
+        }
+      }
+    }
+
     const { sheetId, range } = await resolveSheetResource("attendance");
     const sheetName = getSheetName(range, "attendance");
 
