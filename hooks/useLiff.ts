@@ -13,20 +13,50 @@ import {
 
 let hasInitializedLiff = false;
 
+const POST_LOGIN_ROUTE_KEY = "paopao-post-login-route";
+const LIFF_ENTRY_PATH = "/attendance";
+
+function restorePostLoginRoute() {
+  if (
+    typeof window === "undefined" ||
+    window.location.pathname !== LIFF_ENTRY_PATH
+  ) {
+    return false;
+  }
+
+  const route = window.sessionStorage.getItem(POST_LOGIN_ROUTE_KEY);
+  if (!route?.startsWith("/evaluation")) {
+    return false;
+  }
+
+  window.sessionStorage.removeItem(POST_LOGIN_ROUTE_KEY);
+  window.location.replace(route);
+  return true;
+}
+
 function getSafeRedirectUri() {
   if (typeof window === "undefined") {
     return undefined;
   }
 
-  const url = new URL(window.location.href);
-  url.searchParams.delete("redirect");
-  url.searchParams.delete("liff.state");
-  url.searchParams.delete("access_token");
-  url.searchParams.delete("id_token");
-  url.searchParams.delete("code");
-  url.searchParams.delete("state");
-  url.hash = "";
-  return url.toString();
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.delete("redirect");
+  currentUrl.searchParams.delete("liff.state");
+  currentUrl.searchParams.delete("access_token");
+  currentUrl.searchParams.delete("id_token");
+  currentUrl.searchParams.delete("code");
+  currentUrl.searchParams.delete("state");
+  currentUrl.hash = "";
+
+  if (currentUrl.pathname !== LIFF_ENTRY_PATH) {
+    window.sessionStorage.setItem(
+      POST_LOGIN_ROUTE_KEY,
+      `${currentUrl.pathname}${currentUrl.search}`,
+    );
+    return new URL(LIFF_ENTRY_PATH, currentUrl.origin).toString();
+  }
+
+  return currentUrl.toString();
 }
 
 export function useLiff() {
@@ -152,6 +182,9 @@ export function useLiff() {
 
         window.localStorage.setItem("line-user", JSON.stringify(userData));
         setUser(userData);
+        if (restorePostLoginRoute()) {
+          return;
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error("LIFF initialization failed:", err);
