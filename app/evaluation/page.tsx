@@ -181,7 +181,7 @@ export default function EvaluationPage() {
     );
 
   return (
-    <main className="min-h-screen bg-[#F7F8FA] px-3 pt-6 pb-28">
+    <main className="min-h-screen bg-[#F7F8FA] px-3 pt-6 pb-[calc(env(safe-area-inset-bottom)+11rem)]">
       <div className="mx-auto max-w-lg">
         <header className="rounded-[22px] bg-[#172033] p-4 text-white shadow-xl">
           <p className="text-xs text-slate-300">ประเมินประจำสัปดาห์</p>
@@ -298,7 +298,7 @@ export default function EvaluationPage() {
             {error}
           </p>
         ) : null}
-        <div className="fixed inset-x-0 bottom-20 z-30 px-3">
+        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-30 px-3">
           <button
             disabled={!canReview}
             onClick={() => setReviewing(true)}
