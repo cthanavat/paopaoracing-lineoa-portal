@@ -11,6 +11,7 @@ import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
 import {
   canUseEvaluation,
   getWeekContext,
+  isEvaluationSubject,
   isTruthy,
   validateScores,
 } from "@/lib/server/evaluation";
@@ -77,7 +78,7 @@ export async function GET(request) {
     const employees = employeesData.rows
       .filter(
         (item) =>
-          isTruthy(item.active) &&
+          isEvaluationSubject(item) &&
           item.employee_id !== context.employee.employee_id,
       )
       .map((item) => ({
@@ -209,7 +210,7 @@ export async function POST(request) {
 
     const employees = employeesData.rows.filter(
       (item) =>
-        isTruthy(item.active) &&
+        isEvaluationSubject(item) &&
         item.employee_id !== context.employee.employee_id,
     );
     const activeTopics = topicsData.rows.filter((item) =>

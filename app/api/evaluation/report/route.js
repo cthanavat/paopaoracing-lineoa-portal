@@ -9,7 +9,7 @@ import { requireVerifiedLineUser } from "@/lib/server/lineAuth";
 import {
   aggregateMonthlyScores,
   canUseEvaluation,
-  isTruthy,
+  isEvaluationSubject,
 } from "@/lib/server/evaluation";
 
 async function rowsFor(resource) {
@@ -47,9 +47,16 @@ export async function GET(request) {
       rowsFor("evaluation_topics"),
       rowsFor("employees"),
     ]);
-    const activeEmployees = employees.filter((item) => isTruthy(item.active));
+    const activeEmployees = employees.filter(isEvaluationSubject);
+    const staffEmployeeIds = new Set(
+      activeEmployees.map((item) => item.employee_id),
+    );
     const reports = aggregateMonthlyScores(
-      scoreRows.filter((row) => row.month_key === month),
+      scoreRows.filter(
+        (row) =>
+          row.month_key === month &&
+          staffEmployeeIds.has(row.subject_employee_id),
+      ),
       topics,
     ).map((report) => ({
       ...report,
