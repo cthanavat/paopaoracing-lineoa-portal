@@ -129,7 +129,7 @@ export default function AllEmployeeLeaveSchedule({
             type="button"
             onClick={() => setCalendarPage(0)}
             aria-pressed={calendarPage === 0}
-            className={`min-h-8 rounded-full px-4 text-[11px] font-black transition ${
+            className={`leave-calendar-page-button min-h-8 rounded-full px-4 text-[11px] font-black transition ${
               calendarPage === 0 ? "bg-[#191a1c] text-white" : "text-[#666]"
             }`}
           >
@@ -139,7 +139,7 @@ export default function AllEmployeeLeaveSchedule({
             type="button"
             onClick={() => setCalendarPage(1)}
             aria-pressed={calendarPage === 1}
-            className={`min-h-8 rounded-full px-4 text-[11px] font-black transition ${
+            className={`leave-calendar-page-button min-h-8 rounded-full px-4 text-[11px] font-black transition ${
               calendarPage === 1 ? "bg-[#191a1c] text-white" : "text-[#666]"
             }`}
           >

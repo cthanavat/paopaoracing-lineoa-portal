@@ -753,7 +753,8 @@ html {
   color: #191a1c !important;
 }
 
-.employee-shell .employee-phone-vertical {
+.employee-shell .employee-phone-vertical,
+.employee-shell .leave-calendar-page-button[aria-pressed="true"] {
   color: #ffffff !important;
 }
 
